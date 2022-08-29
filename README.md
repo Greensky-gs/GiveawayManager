@@ -26,7 +26,7 @@ const GiveawayManager = require('./GiveawaysManager');
 // Create a new client instance
 const client = new Client({ intents: [ GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers ] });
 
-const db = mysql.CreateConnection({
+const db = mysql.createConnection({
     host: "your database host",
     database: "database in the host",
     user: "the user that you use",
