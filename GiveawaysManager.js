@@ -56,7 +56,8 @@ class GiveawaysManager {
     /**
      * @param {GuildMember} member
      */
-    checkIfValidEntry(member, data) {
+    checkIfValidEntry(member, x) {
+        let data = this.formatToObject(x);
         if (data.denied_roles && data.denied_roles?.length > 0) {
             let has = false;
             for (const role of data.denied_roles) {
@@ -98,7 +99,7 @@ class GiveawaysManager {
         let sql = `INSERT INTO giveaways (${Object.keys(data).join(', ')}) VALUES ( ${Object.values(data).map(x => x.toString().includes('[') ? `'${x}'` : (typeof x =="string") ? `"${x.replace(/"/g, '\\"')}"`: `"${x}"`).join(', ')} )`;
 
         if (exists == true) {
-            sql = `UPDATE giveaways SET ${Object.keys(data).map((x => `${x}=${(typeof data[x] == "string" && arrays.includes(x)) ? `'${data[x].replace(/"/g, '\\"')}'` : `"${data[x]}"`}`)).join(', ')}`;
+            sql = `UPDATE giveaways SET ${Object.keys(data).map((x => `${x}=${(typeof data[x] == "string" && arrays.includes(x)) ? `'${data[x].replace(/"/g, '\\"')}'` : `"${data[x]}"`}`)).join(', ')} WHERE message_id="${data.message_id}"`;
         };
 
         return sql;
@@ -108,7 +109,7 @@ class GiveawaysManager {
         const arrays = ['participants', 'bonus_roles', 'denied_roles', 'required_roles', 'winners'];
         
         for (const prop of arrays) {
-            gw[prop] = JSON.stringify(gw[prop]);
+            if (typeof gw[prop] == 'object') gw[prop] = JSON.stringify(gw[prop]);
         };
         gw.ended = gw.ended == true ? '1' : "0";
         for (const string of Object.keys(gw).filter(x => typeof gw[x] == "string" && !arrays.includes(x))) {
@@ -121,7 +122,7 @@ class GiveawaysManager {
         let gw = data;
         
         for (const prop of ['participants', 'bonus_roles', 'denied_roles', 'required_roles', 'winners']) {
-            gw[prop] = JSON.parse(gw[prop]);
+            if (typeof gw[prop] == 'string') gw[prop] = JSON.parse(gw[prop]);
         };
 
         gw.winnerCount = parseInt(gw.winnerCount);
@@ -137,7 +138,9 @@ class GiveawaysManager {
     /**
      * @param {{ guild: Guild, channel: TextChannel, message: Message }} data 
      */
-    async roll(gw, data) {
+    async roll(x, data) {
+        let gw = this.formatToObject(x);
+        
         if (gw.participants.length == 0) return [];
         let participants = [];
 
@@ -264,6 +267,7 @@ class GiveawaysManager {
     }
     addParticipation(userId, data) {
         let gw = data;
+        if (typeof gw.participants == 'string') gw.participants = JSON.parse(gw.participants);
         gw.participants.push(userId);
 
         let sql = this.createQuery(this.formatToSql(gw), true);
@@ -277,6 +281,7 @@ class GiveawaysManager {
     }
     removeParticipation(userId, data) {
         let gw = data;
+        if (typeof gw.participants == 'string') gw.participants = JSON.parse(gw.participants);
         let index = gw.participants.indexOf(userId);
         gw.participants.splice(index, 1);
 
