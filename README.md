@@ -16,6 +16,7 @@ Here is the way yo create your Discord's Giveaway Manager by Greensky :
 // Require the necessary discord.js classes
 const { Client, GatewayIntentBits } = require('discord.js');
 const { token } = require('./config.json');
+
 // Require mysql
 const mysql = require('mysql');
 
@@ -25,7 +26,13 @@ const GiveawayManager = require('./GiveawaysManager');
 // Create a new client instance
 const client = new Client({ intents: [ GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers ] });
 
-const db = new mysql.CreateConnection({ ... });
+const db = mysql.CreateConnection({
+    host: "your database host",
+    database: "database in the host",
+    user: "the user that you use",
+    password: "The password of the database/user"
+});
+
 db.connect((error) => {
     if (error) throw error;
 
