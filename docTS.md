@@ -245,9 +245,9 @@ Here are some useful informations if you want to master the [giveaway manager](h
 ### Bonus Roles
 
 Bonus roles are roles that give 1 more entry per role if you have it
-> Let's say that 10 persons who parcitipate to a giveaway
-> This giveaway has 1 bonus role
-> A person has THE bonus role
+> Let's say that 10 persons who parcitipate to a giveaway</br>
+> This giveaway has 1 bonus role</br>
+> A person has THE bonus role</br>
 > Consequently, this person has 2 chances out of 11 to win, and others one have 1 chance out of 11
 
 ### Required Roles
