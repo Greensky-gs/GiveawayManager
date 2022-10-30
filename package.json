@@ -1,0 +1,15 @@
+{
+  "name": "giveawayManager",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/Greensky-gs/giveawayManager",
+  "author": "Greensky <david.hesliere@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@types/mysql": "^2.15.21",
+    "discord.js": "^14.6.0",
+    "dotenv": "^16.0.3",
+    "mysql": "^2.18.1",
+    "prettier": "^2.7.1"
+  }
+}
