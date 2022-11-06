@@ -21,7 +21,7 @@ This is a Discord Giveaway Manager for discord.js v14ㅤㅤㅤㅤㅤㅤㅤㅤㅤ
   
 ## Database
 
-First, take the command in [giveaways.sql](./giveaways.sql) and inject it in your MySQL database.ㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤ It will create a table working for the manager
+First, take the command in [giveaways.sql](./giveaways.sql) and inject it in your MySQL database.ㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤIt will create a table working for the manager
 
 ## Documentation
 
