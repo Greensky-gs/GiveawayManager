@@ -31,9 +31,14 @@ See the documentations here :
 
 ## Contributors
 
-<a href="https://github.com/Greensky-gs/GiveawayManager/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=Greensky-gs/GiveawayManager" />
-</a>
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
 
 ## License
 
