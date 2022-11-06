@@ -16,12 +16,11 @@
 
 ## About
 
-This is a Discord Giveaway Manager for discord.js v14ㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤ
-:warning: You need to have a MySQL database to use the Manager
+This is a Discord Giveaway Manager for discord.js v14ㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤ:warning: You need to have a MySQL database to use the Manager
   
 ## Database
 
-First, take the command in [giveaways.sql](./giveaways.sql) and inject it in your MySQL database.ㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤIt will create a table working for the manager
+First, take the command in [giveaways.sql](./giveaways.sql) and inject it in your MySQL database.ㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤIt will create a table working for the manager
 
 ## Documentation
 
@@ -38,4 +37,4 @@ See the documentations here :
 
 ## License
 
-Released under the MIT license.ㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤThis project is maintained by [Greensky](https://github.com/Greensky-gs).
+Released under the MIT license.ㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤ  This project is maintained by [Greensky](https://github.com/Greensky-gs).
