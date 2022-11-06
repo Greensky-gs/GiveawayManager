@@ -1,7 +1,5 @@
 import { ButtonBuilder, ButtonInteraction, Client, Collection, Guild, Message, TextChannel } from 'discord.js';
-import { config } from 'dotenv';
 import { giveaway as gwT, giveawayInput, gwSql } from '../typings/giveaway';
-import { query } from '../assets/query';
 import {
     alreadyParticipate,
     ended,
@@ -13,17 +11,19 @@ import {
     winners as winnersEmbed
 } from '../assets/embeds';
 import { cancelParticipation, getAsRow, participate } from '../assets/buttons';
-config();
+import { Connection } from 'mysql';
 
 export class GiveawayManager {
     public readonly client: Client;
+    public database: Connection;
     private cache: Collection<string, gwT>;
     private ended: Collection<string, gwT>;
 
-    constructor(client: Client) {
+    constructor(client: Client, db: Connection) {
         this.client = client;
         this.cache = new Collection();
         this.ended = new Collection();
+        this.database = db;
     }
     /**
      * @description Get the list of all the giveaways in JSON format.
@@ -100,7 +100,7 @@ export class GiveawayManager {
                 reward: input.reward
             };
             this.cache.set(data.message_id, data);
-            await query(this.makeQuery(data));
+            await this.query(this.makeQuery(data));
             resolve(data);
         });
     }
@@ -166,7 +166,7 @@ export class GiveawayManager {
 
             this.cache.delete(gw.message_id);
             this.ended.set(gw.message_id, gw);
-            await query(this.makeQuery(gw, true));
+            await this.query(this.makeQuery(gw, true));
             return resolve(winners);
         });
     }
@@ -205,7 +205,7 @@ export class GiveawayManager {
                 .catch(() => {});
 
             let sql = this.makeQuery(gw, true);
-            await query(sql);
+            await this.query(sql);
 
             this.ended.set(input, gw);
 
@@ -236,7 +236,7 @@ export class GiveawayManager {
 
             await message.delete().catch(() => {});
             this[this.cache.has(gw.message_id) ? 'cache' : 'ended'].delete(gw.message_id);
-            await query(`DELETE FROM giveaways WHERE message_id='${gw.message_id}'`);
+            await this.query(`DELETE FROM giveaways WHERE message_id='${gw.message_id}'`);
             return resolve(gw);
         });
     }
@@ -292,7 +292,7 @@ export class GiveawayManager {
             ]
         });
         this.cache.set(gw.message_id, gw);
-        query(this.makeQuery(gw, true));
+        this.query(this.makeQuery(gw, true));
     }
     private unregisterParticipation(interaction: ButtonInteraction<'cached'>) {
         const gw = this.cache.get(interaction.message.id);
@@ -308,7 +308,7 @@ export class GiveawayManager {
 
         gw.participants.splice(gw.participants.indexOf(interaction.user.id), 1);
         this.cache.set(gw.message_id, gw);
-        query(this.makeQuery(gw, true));
+        this.query(this.makeQuery(gw, true));
 
         interaction
             .reply({
@@ -374,7 +374,7 @@ export class GiveawayManager {
             return resolve(winners);
         });
     }
-    private makeQuery(data: gwT, exists?: boolean) {
+    private makeQuery(data: any, exists?: boolean) {
         if (exists === true)
             return `UPDATE giveaways SET ${Object.keys(data)
                 .map((k) => `${k}="${this.getValue(data[k])}"`)
@@ -389,8 +389,8 @@ export class GiveawayManager {
         if (typeof x === 'string') return x.replace(/"/g, '\\"');
         return JSON.stringify(x);
     }
-    private toObj(x: gwSql) {
-        let gw: gwT = x;
+    private toObj(x: any) {
+        let gw: any = x;
         ['participants', 'required_roles', 'winners', 'denied_roles', 'bonus_roles'].forEach((v) => {
             gw[v] = JSON.parse(x[v]);
         });
@@ -398,9 +398,17 @@ export class GiveawayManager {
         return gw;
     }
     private async fillCache() {
-        const gws = await query<gwSql>('SELECT * FROM giveaways');
+        const gws = await this.query<gwSql>('SELECT * FROM giveaways');
         for (const gw of gws) {
             this.cache.set(gw.message_id, this.toObj(gw));
         }
     }
+    private query = <R = any>(search: string) => {
+        return new Promise<R[]>((resolve, reject) => {
+            this.database.query(search, (error, request) => {
+                if (error) reject(error);
+                else resolve(request);
+            });
+        });
+    };
 }

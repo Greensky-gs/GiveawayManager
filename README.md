@@ -12,10 +12,10 @@ It will create a table working for the manager
 
 ## Documentation
 
-Here are the documentations for :
+See the documentations here :
 
--   [JavaScript](./docJS.md)
--   [TypeScript](./docTS.md)
+* [Javascript](./docJS.md)
+* [Typescript](./docTS.md)
 
 ## Support
 

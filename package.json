@@ -1,15 +1,42 @@
 {
-  "name": "giveawayManager",
-  "version": "1.0.0",
-  "main": "index.js",
+  "name": "giveawaymanager",
+  "version": "1.1.0",
+  "main": "dist/index.js",
+  "files": [
+    "./dist"
+  ],
   "repository": "https://github.com/Greensky-gs/giveawayManager",
   "author": "Greensky <david.hesliere@gmail.com>",
   "license": "MIT",
   "dependencies": {
     "@types/mysql": "^2.15.21",
     "discord.js": "^14.6.0",
-    "dotenv": "^16.0.3",
     "mysql": "^2.18.1",
-    "prettier": "^2.7.1"
+    "prettier": "^2.7.1",
+    "tsc": "^2.0.4",
+    "typescript": "^4.8.4"
+  },
+  "keywords": [
+    "discord",
+    "giveaways",
+    "manager",
+    "mysql"
+  ],
+  "bugs": {
+    "url": "https://github.com/Greensky-gs/giveawayManager/issues"
+  },
+  "engines": {
+    "node": ">=16.17.1"
+  },
+  "directories": {
+    "lib": "src"
+  },
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs"
+    },
+    "./src/*": "./dist/*",
+    "./dist/*": "./dist/*"
   }
 }

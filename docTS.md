@@ -15,13 +15,21 @@ Once you got your files, write this to initiate the manager
 ```ts
 import { Client } from 'discord.js';
 import { GiveawaysManager } from './GiveawayManager';
+import { createConnection } from './mysql';
 
 const client = new Client({
     intents: ['Guilds', 'GuildMessages', 'GuildMembers'],
     partials: ['MESSAGES', 'CHANNELS']
 });
 
-const manager = new GiveawaysManager(client);
+const db = createConnection({
+    host: 'database host',
+    username: 'database username',
+    password: 'database password',
+    database: 'database name'
+})
+
+const manager = new GiveawaysManager(client, db);
 manager.start();
 
 client.GiveawaysManager = manager;
