@@ -1,29 +1,30 @@
 import { ButtonBuilder, ButtonInteraction, Client, Collection, Guild, Message, TextChannel } from 'discord.js';
 import { giveaway as gwT, giveawayInput, gwSql } from '../typings/giveaway';
-import {
-    alreadyParticipate,
-    ended,
-    giveaway,
-    hasDeniedRoles,
-    missingRequiredRoles,
-    notParticipated,
-    removeParticipation,
-    winners as winnersEmbed
-} from '../assets/embeds';
-import { cancelParticipation, getAsRow, participate } from '../assets/buttons';
+import * as embeds from '../assets/embeds';
+import * as buttons from '../assets/buttons';
 import { Connection } from 'mysql';
+import { embedsInputData } from '../typings/embeds';
+import { buttonsInputData } from '../typings/buttons';
 
 export class GiveawayManager {
     public readonly client: Client;
+    private embeds: embedsInputData = embeds;
+    private buttons: buttonsInputData = buttons;
+
     public database: Connection;
     private cache: Collection<string, gwT>;
     private ended: Collection<string, gwT>;
 
-    constructor(client: Client, db: Connection) {
+    constructor(client: Client, db: Connection, options?: {
+        embeds?: embedsInputData;
+        buttons?: buttonsInputData;
+    }) {
         this.client = client;
         this.cache = new Collection();
         this.ended = new Collection();
         this.database = db;
+        this.embeds = options?.embeds ? Object.assign(options.embeds, this.embeds) : this.embeds;
+        this.buttons = options?.buttons ? Object.assign(options.buttons, this.buttons) : this.buttons;
     }
     /**
      * @description Get the list of all the giveaways in JSON format.
@@ -67,6 +68,8 @@ export class GiveawayManager {
                 });
         }, 15000);
         this.setOnInteraction();
+
+        this.query(`CREATE IF NOT EXISTS giveaways ( guild_id TEXT(255) NOT NULL, channel_id TEXT(255) NOT NULL, message_id TEXT(255) NOT NULL, hoster_id TEXT(255) NOT NULL, reward TEXT(255) NOT NULL, winnerCount INTEGER(255) NOT NULL DEFAULT "1", endsAt VARCHAR(1024) NOT NULL, participants LONGTEXT NOT NULL DEFAULT '[]', required_roles LONGTEXT NOT NULL DEFAULT '[]', denied_roles LONGTEXT NOT NULL DEFAULT '[]', bonus_roles LONGTEXT NOT NULL DEFAULT '[]', winners LONGTEXT NOT NULL DEFAULT '[]', ended TINYINT(1) NOT NULL DEFAULT "0" );`)
     }
     /**
      * @description Create a giveaway in a server with the data that you specified
@@ -74,12 +77,12 @@ export class GiveawayManager {
      */
     public createGiveaway(input: giveawayInput): Promise<gwT> {
         return new Promise(async (resolve, reject) => {
-            const embed = giveaway(input);
+            const embed = this.embeds.giveaway(input);
 
             const msg = await input.channel
                 .send({
                     embeds: [embed],
-                    components: [getAsRow<ButtonBuilder>([participate(), cancelParticipation()])]
+                    components: [buttons.getAsRow<ButtonBuilder>([this.buttons.participate(), this.buttons.cancelParticipation()])]
                 })
                 .catch(() => {});
             if (!msg) return reject('No message');
@@ -151,14 +154,14 @@ export class GiveawayManager {
             if (!message) return resolve('no message');
 
             const winners = await this.roll(gw, guild);
-            const embed = ended(gw, winners);
+            const embed = this.embeds.ended(gw, winners);
 
             gw.winners = winners;
             await message.edit({ embeds: [embed], components: [] }).catch((e) => {
                 console.log(e);
             });
             await channel
-                .send({ reply: { messageReference: message }, embeds: [winnersEmbed(winners, this.getUrl(gw))] })
+                .send({ reply: { messageReference: message }, embeds: [this.embeds.winners(winners, this.getUrl(gw))] })
                 .catch((e) => {
                     console.log(e);
                 });
@@ -197,11 +200,11 @@ export class GiveawayManager {
 
             let winners = await this.roll(gw, guild);
             gw.winners = winners;
-            const embed = ended(gw, winners);
+            const embed = this.embeds.ended(gw, winners);
 
             await message.edit({ embeds: [embed] }).catch(() => {});
             await channel
-                .send({ reply: { messageReference: message }, embeds: [winnersEmbed(winners, this.getUrl(gw))] })
+                .send({ reply: { messageReference: message }, embeds: [this.embeds.winners(winners, this.getUrl(gw))] })
                 .catch(() => {});
 
             let sql = this.makeQuery(gw, true);
@@ -247,7 +250,7 @@ export class GiveawayManager {
         if (gw.participants.includes(interaction.user.id))
             return interaction
                 .reply({
-                    embeds: [alreadyParticipate(this.getUrl(gw))],
+                    embeds: [this.embeds.alreadyParticipate(this.getUrl(gw))],
                     ephemeral: true
                 })
                 .catch(() => {});
@@ -257,7 +260,7 @@ export class GiveawayManager {
             if (missing.length < gw.required_roles.length)
                 return interaction
                     .reply({
-                        embeds: [missingRequiredRoles(missing, this.getUrl(gw))],
+                        embeds: [this.embeds.missingRequiredRoles(missing, this.getUrl(gw))],
                         ephemeral: true
                     })
                     .catch(() => {});
@@ -270,7 +273,7 @@ export class GiveawayManager {
             if (missing.length < mRoles.size)
                 return interaction
                     .reply({
-                        embeds: [hasDeniedRoles(missing, this.getUrl(gw))],
+                        embeds: [this.embeds.hasDeniedRoles(missing, this.getUrl(gw))],
                         ephemeral: true
                     })
                     .catch(() => {});
@@ -278,7 +281,7 @@ export class GiveawayManager {
         gw.participants.push(interaction.user.id);
         interaction.message.edit({
             embeds: [
-                giveaway({
+                this.embeds.giveaway({
                     bonus_roles: gw.bonus_roles,
                     required_roles: gw.required_roles,
                     denied_roles: gw.denied_roles,
@@ -301,7 +304,7 @@ export class GiveawayManager {
         if (!gw.participants.includes(interaction.user.id))
             return interaction
                 .reply({
-                    embeds: [notParticipated(this.getUrl(gw))],
+                    embeds: [this.embeds.notParticipated(this.getUrl(gw))],
                     ephemeral: true
                 })
                 .catch(() => {});
@@ -312,7 +315,7 @@ export class GiveawayManager {
 
         interaction
             .reply({
-                embeds: [removeParticipation(this.getUrl(gw))],
+                embeds: [this.embeds.removeParticipation(this.getUrl(gw))],
                 ephemeral: true
             })
             .catch(() => {});

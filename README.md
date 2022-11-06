@@ -1,9 +1,12 @@
 # Giveaway Manager
 
 This is a Discord Giveaway Manager for discord.js v14
+
 :warning: You need to have a MySQL database to use the Manager
 
 ## Use
+
+See how to use the manager in the [documentation](#documentation)
 
 ### Database
 

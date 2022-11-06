@@ -29,7 +29,14 @@ const db = createConnection({
     database: 'database name'
 })
 
-const manager = new GiveawaysManager(client, db);
+const manager = new GiveawaysManager(client, db, {
+    embeds: {
+        // Optional embeds customisation
+    },
+    buttons: {
+        // optional buttons customisation
+    }
+});
 manager.start();
 
 client.GiveawaysManager = manager;

@@ -1,12 +1,19 @@
 import { Client, Collection } from 'discord.js';
 import { giveaway as gwT, giveawayInput } from '../typings/giveaway';
 import { Connection } from 'mysql';
+import { embedsInputData } from '../typings/embeds';
+import { buttonsInputData } from '../typings/buttons';
 export declare class GiveawayManager {
     readonly client: Client;
+    private embeds;
+    private buttons;
     database: Connection;
     private cache;
     private ended;
-    constructor(client: Client, db: Connection);
+    constructor(client: Client, db: Connection, options?: {
+        embeds?: embedsInputData;
+        buttons?: buttonsInputData;
+    });
     /**
      * @description Get the list of all the giveaways in JSON format.
      * Use `map` to get it as a map, and `collection` to get it as a Discord collection

@@ -34,7 +34,14 @@ const db = mysql.createConnection({
 db.connect((error) => {
     if (error) throw error;
 
-    client.GiveawaysManager = new GiveawaysManager(client, db);
+    client.GiveawaysManager = new GiveawaysManager(client, db, {
+        embeds: {
+            // Optional embeds customisation
+        },
+        buttons: {
+            // Optional buttons customisation
+        }
+    });
     client.GiveawaysManager.init();
 
     // And the Giveaways Manager is automatically launched

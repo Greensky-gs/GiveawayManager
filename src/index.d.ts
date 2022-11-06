@@ -1,14 +1,21 @@
 import { ButtonInteraction, Client, Collection, Guild } from "discord.js";
 import { Connection } from "mysql";
-import { giveaway as giveawayType, giveawayInput, gwSql } from "./typings/giveaway";
+import { giveaway as giveawayType, giveawayInput } from "./typings/giveaway";
+import { embedsInputData } from './typings/embeds';
+import { buttonsInputData } from './typings/buttons';
 
 export class GiveawayManager {
     public readonly client: Client;
     public database: Connection;
     private cache: Collection<string, giveawayType>;
     private ended: Collection<string, giveawayType>;
+    private embeds: embedsInputData;
+    private buttons: buttonsInputData;
 
-    public constructor(client: Client, db: Connection);
+    public constructor(client: Client, db: Connection, options?: {
+        embeds?: embedsInputData;
+        buttons?: buttonsInputData;
+    });
 
     public get list(): giveawayType[];
     public get map(): Map<string, giveawayType>;
