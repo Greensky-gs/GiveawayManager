@@ -6,4 +6,4 @@ export { giveawayInput, giveaway as Giveaway, gwSql as GiveawaySQLData } from '.
 
 // Assets
 export * as buttons from './assets/buttons';
-export * as embeds from './assets/embeds'
+export * as embeds from './assets/embeds';

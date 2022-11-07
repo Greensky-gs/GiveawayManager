@@ -15,10 +15,14 @@ export class GiveawayManager {
     private cache: Collection<string, gwT>;
     private ended: Collection<string, gwT>;
 
-    constructor(client: Client, db: Connection, options?: {
-        embeds?: embedsInputData;
-        buttons?: buttonsInputData;
-    }) {
+    constructor(
+        client: Client,
+        db: Connection,
+        options?: {
+            embeds?: embedsInputData;
+            buttons?: buttonsInputData;
+        }
+    ) {
         this.client = client;
         this.cache = new Collection();
         this.ended = new Collection();
@@ -62,14 +66,16 @@ export class GiveawayManager {
         this.fillCache();
         setInterval(() => {
             this.cache
-                .filter((x) => x.endsAt <= Date.now())
+                .filter((x) => x.endsAt <= Date.now() && !x.ended)
                 .forEach((x) => {
                     this.endGiveaway(x.message_id);
                 });
         }, 15000);
         this.setOnInteraction();
 
-        this.query(`CREATE TABLE IF NOT EXISTS giveaways ( guild_id TEXT(255) NOT NULL, channel_id TEXT(255) NOT NULL, message_id TEXT(255) NOT NULL, hoster_id TEXT(255) NOT NULL, reward TEXT(255) NOT NULL, winnerCount INTEGER(255) NOT NULL DEFAULT "1", endsAt VARCHAR(1024) NOT NULL, participants LONGTEXT NOT NULL DEFAULT '[]', required_roles LONGTEXT NOT NULL DEFAULT '[]', denied_roles LONGTEXT NOT NULL DEFAULT '[]', bonus_roles LONGTEXT NOT NULL DEFAULT '[]', winners LONGTEXT NOT NULL DEFAULT '[]', ended TINYINT(1) NOT NULL DEFAULT "0" );`)
+        this.query(
+            `CREATE TABLE IF NOT EXISTS giveaways ( guild_id TEXT(255) NOT NULL, channel_id TEXT(255) NOT NULL, message_id TEXT(255) NOT NULL, hoster_id TEXT(255) NOT NULL, reward TEXT(255) NOT NULL, winnerCount INTEGER(255) NOT NULL DEFAULT "1", endsAt VARCHAR(1024) NOT NULL, participants LONGTEXT NOT NULL DEFAULT '[]', required_roles LONGTEXT NOT NULL DEFAULT '[]', denied_roles LONGTEXT NOT NULL DEFAULT '[]', bonus_roles LONGTEXT NOT NULL DEFAULT '[]', winners LONGTEXT NOT NULL DEFAULT '[]', ended TINYINT(1) NOT NULL DEFAULT "0" );`
+        );
     }
     /**
      * @description Create a giveaway in a server with the data that you specified
@@ -82,7 +88,12 @@ export class GiveawayManager {
             const msg = await input.channel
                 .send({
                     embeds: [embed],
-                    components: [buttons.getAsRow<ButtonBuilder>([this.buttons.participate(), this.buttons.cancelParticipation()])]
+                    components: [
+                        buttons.getAsRow<ButtonBuilder>([
+                            this.buttons.participate(),
+                            this.buttons.cancelParticipation()
+                        ])
+                    ]
                 })
                 .catch(() => {});
             if (!msg) return reject('No message');
@@ -160,14 +171,17 @@ export class GiveawayManager {
             await message.edit({ embeds: [embed], components: [] }).catch((e) => {
                 console.log(e);
             });
-            await channel
-                .send({ reply: { messageReference: message }, embeds: [this.embeds.winners(winners, this.getUrl(gw))] })
-                .catch((e) => {
-                    console.log(e);
-                });
+            const em =
+                gw.winners.length === 0
+                    ? this.embeds.noEntries(this.getUrl(gw))
+                    : this.embeds.winners(winners, this.getUrl(gw));
+            await channel.send({ reply: { messageReference: message }, embeds: [em] }).catch((e) => {
+                console.log(e);
+            });
             gw.ended = true;
 
             this.cache.delete(gw.message_id);
+            console.log(this.cache);
             this.ended.set(gw.message_id, gw);
             await this.query(this.makeQuery(gw, true));
             return resolve(winners);
@@ -203,9 +217,11 @@ export class GiveawayManager {
             const embed = this.embeds.ended(gw, winners);
 
             await message.edit({ embeds: [embed] }).catch(() => {});
-            await channel
-                .send({ reply: { messageReference: message }, embeds: [this.embeds.winners(winners, this.getUrl(gw))] })
-                .catch(() => {});
+            const em =
+                gw.winners.length === 0
+                    ? this.embeds.noEntries(this.getUrl(gw))
+                    : this.embeds.winners(winners, this.getUrl(gw));
+            await channel.send({ reply: { messageReference: message }, embeds: [em] }).catch(() => {});
 
             let sql = this.makeQuery(gw, true);
             await this.query(sql);
@@ -290,10 +306,14 @@ export class GiveawayManager {
                     hoster_id: gw.hoster_id,
                     reward: gw.reward,
                     winnerCount: gw.winnerCount,
-                    guild_id: gw.guild_id
+                    guild_id: gw.guild_id,
+                    participants: gw.participants
                 })
             ]
         });
+        interaction
+            .reply({ embeds: [this.embeds.participationRegistered(this.getUrl(gw))], ephemeral: true })
+            .catch(() => {});
         this.cache.set(gw.message_id, gw);
         this.query(this.makeQuery(gw, true));
     }
@@ -309,7 +329,7 @@ export class GiveawayManager {
                 })
                 .catch(() => {});
 
-        gw.participants.splice(gw.participants.indexOf(interaction.user.id), 1);
+        gw.participants = gw.participants.filter((x) => x !== interaction.user.id);
         this.cache.set(gw.message_id, gw);
         this.query(this.makeQuery(gw, true));
 
@@ -317,6 +337,24 @@ export class GiveawayManager {
             .reply({
                 embeds: [this.embeds.removeParticipation(this.getUrl(gw))],
                 ephemeral: true
+            })
+            .catch(() => {});
+        interaction.message
+            .edit({
+                embeds: [
+                    this.embeds.giveaway({
+                        bonus_roles: gw.bonus_roles,
+                        required_roles: gw.required_roles,
+                        denied_roles: gw.denied_roles,
+                        channel: interaction.channel as TextChannel,
+                        time: gw.endsAt - Date.now(),
+                        hoster_id: gw.hoster_id,
+                        reward: gw.reward,
+                        winnerCount: gw.winnerCount,
+                        guild_id: gw.guild_id,
+                        participants: gw.participants
+                    })
+                ]
             })
             .catch(() => {});
     }
@@ -337,7 +375,7 @@ export class GiveawayManager {
     }
     private async roll(gw: gwT, guild: Guild): Promise<string[]> {
         return new Promise(async (resolve) => {
-            if (gw.participants.length == 0) return resolve([]);
+            if (gw.participants.length === 0) return resolve([]);
             if (!guild) return resolve([]);
             let participants: string[] = [];
 
@@ -388,22 +426,25 @@ export class GiveawayManager {
             .map((k) => `"${this.getValue(data[k])}"`)
             .join(', ')})`;
     }
-    private getValue(x: string | string[]): string {
+    private getValue(x: string | string[] | boolean): string {
+        if (typeof x === 'boolean') return x ? '1' : '0';
         if (typeof x === 'string') return x.replace(/"/g, '\\"');
-        return JSON.stringify(x);
+        return JSON.stringify(x).replace(/"/g, '\\"');
     }
     private toObj(x: any) {
         let gw: any = x;
         ['participants', 'required_roles', 'winners', 'denied_roles', 'bonus_roles'].forEach((v) => {
             gw[v] = JSON.parse(x[v]);
         });
+        gw.ended = gw.ended === 1;
 
         return gw;
     }
     private async fillCache() {
         const gws = await this.query<gwSql>('SELECT * FROM giveaways');
-        for (const gw of gws) {
-            this.cache.set(gw.message_id, this.toObj(gw));
+        for (const g of gws) {
+            const gw = this.toObj(g);
+            this[gw.ended ? 'ended' : 'cache'].set(gw.message_id, gw);
         }
     }
     private query = <R = any>(search: string) => {

@@ -1,6 +1,6 @@
-import { ButtonBuilder } from "discord.js"
+import { ButtonBuilder } from 'discord.js';
 
 export type buttonsInputData = {
     participate?: () => ButtonBuilder;
-    cancelParticipation?: () => ButtonBuilder
-}
+    cancelParticipation?: () => ButtonBuilder;
+};

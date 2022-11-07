@@ -1,12 +1,12 @@
 import { giveaway as gw, giveawayInput } from '../typings/giveaway';
 
-const { EmbedBuilder } = require('discord.js');
+import { EmbedBuilder } from 'discord.js';
 
-export const giveaway = (data: giveawayInput) => {
+export const giveaway = (data: giveawayInput & { participants?: string[] }) => {
     const embed = new EmbedBuilder().setTitle('🎉 Giveaway 🎉').setColor('#00ff00').setDescription(`**${data.reward}**
 Hosted by <@${data.hoster_id}>
 **${data.winnerCount}** winner${data.winnerCount > 1 ? 's' : ''}
-Entries : ${data.winnerCount ? data.winnerCount : '0'}
+Entries : ${data.participants?.length ?? '0'}
 
 Ends <t:${((data.time + Date.now()) / 1000).toFixed(0)}:R>`);
 
@@ -103,4 +103,16 @@ export const winners = (winners: string[], url: string) => {
             } ${winners.map((x) => `<@${x}>`).join(' ')}`
         )
         .setColor('#00ff00');
+};
+export const noEntries = (url: string) => {
+    return new EmbedBuilder()
+        .setTitle('No winner')
+        .setDescription(`No winner can be found for [**this giveaway**](${url})`)
+        .setColor('#ff0000');
+};
+export const participationRegistered = (url: string) => {
+    return new EmbedBuilder()
+        .setTitle('🎉 Participation registered')
+        .setDescription(`I registered your participation to [**this giveaway**](${url})`)
+        .setColor('#00FF00');
 };

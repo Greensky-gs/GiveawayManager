@@ -1,6 +1,6 @@
-import { ButtonInteraction, Client, Collection, Guild } from "discord.js";
-import { Connection } from "mysql";
-import { giveaway as giveawayType, giveawayInput } from "./typings/giveaway";
+import { ButtonInteraction, Client, Collection, Guild } from 'discord.js';
+import { Connection } from 'mysql';
+import { giveaway as giveawayType, giveawayInput } from './typings/giveaway';
 import { embedsInputData } from './typings/embeds';
 import { buttonsInputData } from './typings/buttons';
 
@@ -12,10 +12,14 @@ export class GiveawayManager {
     private embeds: embedsInputData;
     private buttons: buttonsInputData;
 
-    public constructor(client: Client, db: Connection, options?: {
-        embeds?: embedsInputData;
-        buttons?: buttonsInputData;
-    });
+    public constructor(
+        client: Client,
+        db: Connection,
+        options?: {
+            embeds?: embedsInputData;
+            buttons?: buttonsInputData;
+        }
+    );
 
     public get list(): giveawayType[];
     public get map(): Map<string, giveawayType>;
@@ -25,8 +29,12 @@ export class GiveawayManager {
     public createGiveaway: (input: giveawayInput) => Promise<giveawayType>;
     public fetchGiveaway: (input: string, force?: boolean) => giveawayType | undefined;
     public endGiveaway: (input: string) => Promise<string[] | 'no giveaway' | 'no guild' | 'no channel' | 'no message'>;
-    public reroll: (input: string) => Promise<string[] | 'not ended' | 'no giveaway' | 'no guild' | 'no channel' | 'no message'>
-    public deleteGiveaway: (input: string) => Promise<giveawayType | 'no giveaway' | 'no guild' | 'no channel' | 'no message'>;
+    public reroll: (
+        input: string
+    ) => Promise<string[] | 'not ended' | 'no giveaway' | 'no guild' | 'no channel' | 'no message'>;
+    public deleteGiveaway: (
+        input: string
+    ) => Promise<giveawayType | 'no giveaway' | 'no guild' | 'no channel' | 'no message'>;
 
     private roll: (giveaway: giveawayType, guild: Guild) => Promise<string[]>;
     private registerParticipation: (interaction: ButtonInteraction<'cached'>) => void;
