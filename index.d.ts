@@ -1,11 +1,11 @@
 import { ButtonInteraction, Client, Collection, Guild } from 'discord.js';
 import { Connection } from 'mysql';
-import { buttonsInputData } from './src/typings/buttons';
-import { embedsInputData } from './src/typings/embeds';
-import { giveaway as Giveaway, giveawayInput } from './src/typings/giveaway';
-export { embedsInputData } from './src/typings/embeds';
-export { buttonsInputData } from './src/typings/buttons';
-export { giveawayInput, giveaway as Giveaway } from './src/typings/giveaway';
+import { buttonsInputData } from './dist/typings/buttons';
+import { embedsInputData } from './dist/typings/embeds';
+import { giveaway as Giveaway, giveawayInput } from './dist/typings/giveaway';
+export { embedsInputData } from './dist/typings/embeds';
+export { buttonsInputData } from './dist/typings/buttons';
+export { giveawayInput, giveaway as Giveaway } from './dist/typings/giveaway';
 
 export class GiveawayManager {
     public readonly client: Client;
