@@ -5,6 +5,7 @@ import * as buttons from '../assets/buttons';
 import { Connection } from 'mysql';
 import { embedsInputData } from '../typings/embeds';
 import { buttonsInputData } from '../typings/buttons';
+import { Giveaway } from '..';
 
 export class GiveawayManager {
     public readonly client: Client;
@@ -115,6 +116,8 @@ export class GiveawayManager {
             };
             this.cache.set(data.message_id, data);
             await this.query(this.makeQuery(data));
+
+            this.client.emit('giveawayStarted', data, input.channel, input.hoster_id)
             resolve(data);
         });
     }
@@ -184,6 +187,8 @@ export class GiveawayManager {
             console.log(this.cache);
             this.ended.set(gw.message_id, gw);
             await this.query(this.makeQuery(gw, true));
+
+            this.client.emit('giveawayEnded', gw, channel);
             return resolve(winners);
         });
     }
@@ -212,7 +217,9 @@ export class GiveawayManager {
             const message = channel.messages.cache.get(input);
             if (!message) return resolve('no message');
 
+            let old = gw.winners ?? [];
             let winners = await this.roll(gw, guild);
+
             gw.winners = winners;
             const embed = this.embeds.ended(gw, winners);
 
@@ -228,6 +235,7 @@ export class GiveawayManager {
 
             this.ended.set(input, gw);
 
+            this.client.emit('giveawayRerolled', gw, old, winners);
             return resolve(winners);
         });
     }
@@ -455,4 +463,12 @@ export class GiveawayManager {
             });
         });
     };
+}
+
+declare module 'discord.js' {
+    interface ClientEvents {
+        giveawayStarted: [ giveaway: Giveaway, channel: TextChannel, user: string ],
+        giveawayEnded: [ giveaway: Giveaway, channel: TextChannel ],
+        giveawayRerolled: [ giveaway: Giveaway, oldWinners: string[], newWinners: string[] ]
+    }
 }
