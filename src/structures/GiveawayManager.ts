@@ -6,11 +6,13 @@ import { Connection } from 'mysql';
 import { embedsInputData } from '../typings/embeds';
 import { buttonsInputData } from '../typings/buttons';
 import { Giveaway } from '..';
+import { ManagerEvents, ManagerListeners } from '../typings/managerEvents';
 
 export class GiveawayManager {
     public readonly client: Client;
     private embeds: embedsInputData = embeds;
     private buttons: buttonsInputData = buttons;
+    private listeners: ManagerListeners<keyof ManagerEvents>[] = [];
 
     public database: Connection;
     private cache: Collection<string, gwT>;
@@ -62,6 +64,18 @@ export class GiveawayManager {
             ended: this.ended,
             giveaways: this.cache
         };
+    }
+    public on<K extends keyof ManagerEvents>(event: K, run: (...args: ManagerEvents[K]) => void | unknown) {
+        this.listeners.push({
+            event,
+            run
+        } as ManagerListeners<keyof ManagerEvents>);
+    }
+    private emit<Key extends keyof ManagerEvents>(event: Key, ...args: ManagerEvents[Key]) {
+        const listeners = this.listeners.filter(x => x.event === event);
+        listeners.forEach((l) => {
+            (l.run as (...args: unknown[]) => void | unknown)(...args);
+        })
     }
     public start() {
         this.fillCache();
@@ -463,12 +477,4 @@ export class GiveawayManager {
             });
         });
     };
-}
-
-declare module 'discord.js' {
-    interface ClientEvents {
-        giveawayStarted: [ giveaway: Giveaway, channel: TextChannel, user: string ],
-        giveawayEnded: [ giveaway: Giveaway, channel: TextChannel ],
-        giveawayRerolled: [ giveaway: Giveaway, oldWinners: string[], newWinners: string[] ]
-    }
 }
