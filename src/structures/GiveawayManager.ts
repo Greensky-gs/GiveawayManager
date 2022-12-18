@@ -250,7 +250,7 @@ export class GiveawayManager {
 
             this.ended.set(input, gw);
 
-            this.client.emit('giveawayRerolled', channel, gw, old, winners);
+            this.client.emit('giveawayRerolled', gw, channel, old, winners);
             return resolve(winners);
         });
     }
