@@ -40,7 +40,8 @@ db.connect((error) => {
         },
         buttons: {
             // Optional buttons customisation
-        }
+        },
+        sendMessages: // Optionnal boolean option that trigger messages send (reroll and end messages)
     });
     client.GiveawaysManager.init();
 

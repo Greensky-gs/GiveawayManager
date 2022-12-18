@@ -5,7 +5,6 @@ import * as buttons from '../assets/buttons';
 import { Connection } from 'mysql';
 import { embedsInputData } from '../typings/embeds';
 import { buttonsInputData } from '../typings/buttons';
-import { Giveaway } from '..';
 import { ManagerEvents, ManagerListeners } from '../typings/managerEvents';
 
 export class GiveawayManager {
@@ -13,6 +12,7 @@ export class GiveawayManager {
     private embeds: embedsInputData = embeds;
     private buttons: buttonsInputData = buttons;
     private listeners: ManagerListeners<keyof ManagerEvents>[] = [];
+    private sendMessages: boolean = true;
 
     public database: Connection;
     private cache: Collection<string, gwT>;
@@ -24,7 +24,8 @@ export class GiveawayManager {
         options?: {
             embeds?: embedsInputData;
             buttons?: buttonsInputData;
-        }
+            sendMessages?: boolean;
+        },
     ) {
         this.client = client;
         this.cache = new Collection();
@@ -32,6 +33,7 @@ export class GiveawayManager {
         this.database = db;
         this.embeds = options?.embeds ? Object.assign(options.embeds, this.embeds) : this.embeds;
         this.buttons = options?.buttons ? Object.assign(options.buttons, this.buttons) : this.buttons;
+        this.sendMessages = ![null, undefined].includes(options?.sendMessages) ? options.sendMessages : this.sendMessages;
     }
     /**
      * @description Get the list of all the giveaways in JSON format.
@@ -77,7 +79,10 @@ export class GiveawayManager {
             (l.run as (...args: unknown[]) => void | unknown)(...args);
         })
     }
-    public start() {
+    public async start() {
+        await this.query(
+            `CREATE TABLE IF NOT EXISTS giveaways ( guild_id TEXT(255) NOT NULL, channel_id TEXT(255) NOT NULL, message_id TEXT(255) NOT NULL, hoster_id TEXT(255) NOT NULL, reward TEXT(255) NOT NULL, winnerCount INTEGER(255) NOT NULL DEFAULT "1", endsAt VARCHAR(1024) NOT NULL, participants LONGTEXT NOT NULL DEFAULT '[]', required_roles LONGTEXT NOT NULL DEFAULT '[]', denied_roles LONGTEXT NOT NULL DEFAULT '[]', bonus_roles LONGTEXT NOT NULL DEFAULT '[]', winners LONGTEXT NOT NULL DEFAULT '[]', ended TINYINT(1) NOT NULL DEFAULT "0" );`
+        );
         this.fillCache();
         setInterval(() => {
             this.cache
@@ -88,9 +93,6 @@ export class GiveawayManager {
         }, 15000);
         this.setOnInteraction();
 
-        this.query(
-            `CREATE TABLE IF NOT EXISTS giveaways ( guild_id TEXT(255) NOT NULL, channel_id TEXT(255) NOT NULL, message_id TEXT(255) NOT NULL, hoster_id TEXT(255) NOT NULL, reward TEXT(255) NOT NULL, winnerCount INTEGER(255) NOT NULL DEFAULT "1", endsAt VARCHAR(1024) NOT NULL, participants LONGTEXT NOT NULL DEFAULT '[]', required_roles LONGTEXT NOT NULL DEFAULT '[]', denied_roles LONGTEXT NOT NULL DEFAULT '[]', bonus_roles LONGTEXT NOT NULL DEFAULT '[]', winners LONGTEXT NOT NULL DEFAULT '[]', ended TINYINT(1) NOT NULL DEFAULT "0" );`
-        );
     }
     /**
      * @description Create a giveaway in a server with the data that you specified
@@ -192,13 +194,12 @@ export class GiveawayManager {
                 gw.winners.length === 0
                     ? this.embeds.noEntries(this.getUrl(gw))
                     : this.embeds.winners(winners, this.getUrl(gw));
-            await channel.send({ reply: { messageReference: message }, embeds: [em] }).catch((e) => {
+            if (this.sendMessages) await channel.send({ reply: { messageReference: message }, embeds: [em] }).catch((e) => {
                 console.log(e);
             });
             gw.ended = true;
 
             this.cache.delete(gw.message_id);
-            console.log(this.cache);
             this.ended.set(gw.message_id, gw);
             await this.query(this.makeQuery(gw, true));
 
@@ -242,7 +243,7 @@ export class GiveawayManager {
                 gw.winners.length === 0
                     ? this.embeds.noEntries(this.getUrl(gw))
                     : this.embeds.winners(winners, this.getUrl(gw));
-            await channel.send({ reply: { messageReference: message }, embeds: [em] }).catch(() => {});
+            if (this.sendMessages) await channel.send({ reply: { messageReference: message }, embeds: [em] }).catch(() => {});
 
             let sql = this.makeQuery(gw, true);
             await this.query(sql);

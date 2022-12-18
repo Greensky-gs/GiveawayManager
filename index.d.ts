@@ -15,6 +15,7 @@ export class GiveawayManager {
     private ended: Collection<string, Giveaway>;
     private embeds: embedsInputData;
     private buttons: buttonsInputData;
+    private sendMessages: boolean;
 
     public constructor(
         client: Client,
@@ -22,7 +23,8 @@ export class GiveawayManager {
         options?: {
             embeds?: embedsInputData;
             buttons?: buttonsInputData;
-        }
+            sendMessages?: boolean;
+        },
     );
 
     public get list(): Giveaway[];

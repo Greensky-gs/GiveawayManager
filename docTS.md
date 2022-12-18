@@ -35,7 +35,8 @@ const manager = new GiveawaysManager(client, db, {
     },
     buttons: {
         // optional buttons customisation
-    }
+    },
+    sendMessages: // Optionnal boolean option that trigger messages send (reroll and end messages)
 });
 manager.start();
 
