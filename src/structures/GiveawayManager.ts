@@ -203,7 +203,7 @@ export class GiveawayManager {
             this.ended.set(gw.message_id, gw);
             await this.query(this.makeQuery(gw, true));
 
-            this.client.emit('giveawayEnded', gw, channel);
+            this.client.emit('giveawayEnded', gw, channel, winners);
             return resolve(winners);
         });
     }
@@ -250,7 +250,7 @@ export class GiveawayManager {
 
             this.ended.set(input, gw);
 
-            this.client.emit('giveawayRerolled', gw, old, winners);
+            this.client.emit('giveawayRerolled', channel, gw, old, winners);
             return resolve(winners);
         });
     }
