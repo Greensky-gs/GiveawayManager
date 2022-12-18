@@ -23,9 +23,9 @@ export class GiveawayManager {
         },
     );
 
-    public get list(): giveawayType[];
-    public get map(): Map<string, giveawayType>;
-    public get collection(): Collection<string, giveawayType>;
+    public get list(): { ended: giveawayType[], giveaways: giveawayType[] };
+    public get map(): { ended: Map<string, giveawayType>, giveaways: Map<string, giveawayType> };
+    public get collection(): { ended: Collection<string, giveawayType>, giveaways: Collection<string, giveawayType> };
 
     public start: () => void;
     public createGiveaway: (input: giveawayInput) => Promise<giveawayType>;

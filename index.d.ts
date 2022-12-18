@@ -27,9 +27,11 @@ export class GiveawayManager {
         },
     );
 
-    public get list(): Giveaway[];
-    public get map(): Map<string, Giveaway>;
-    public get collection(): Collection<string, Giveaway>;
+    
+    public get list(): { ended: Giveaway[], giveaways: Giveaway[] };
+    public get map(): { ended: Map<string, Giveaway>, giveaways: Map<string, Giveaway> };
+    public get collection(): { ended: Collection<string, Giveaway>, giveaways: Collection<string, Giveaway> };
+
     public on<K extends keyof ManagerEvents>(event: K, run: (...args: ManagerEvents[K]) => void | unknown): void;
     public start(): void;
     public createGiveaway(input: giveawayInput): Promise<Giveaway>;
