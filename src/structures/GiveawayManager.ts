@@ -31,8 +31,8 @@ export class GiveawayManager {
         this.cache = new Collection();
         this.ended = new Collection();
         this.database = db;
-        this.embeds = options?.embeds ? Object.assign(options.embeds, this.embeds) : this.embeds;
-        this.buttons = options?.buttons ? Object.assign(options.buttons, this.buttons) : this.buttons;
+        this.embeds = options?.embeds ? Object.assign(this.embeds, options.embeds) : this.embeds;
+        this.buttons = options?.buttons ? Object.assign(this.buttons, options.buttons) : this.buttons;
         this.sendMessages = ![null, undefined].includes(options?.sendMessages) ? options.sendMessages : this.sendMessages;
     }
     /**
