@@ -10,7 +10,7 @@ Install dependencies : `yarn install`
 
 The manager is in [`./container/typescript`](./container/typescript/)
 
-Once you got your files, write this to initiate the manager
+Once you got your files, write this to initiate the manager for MySQL
 
 ```ts
 import { Client } from 'discord.js';
@@ -29,7 +29,46 @@ const db = createConnection({
     database: 'database name'
 })
 
-const manager = new GiveawaysManager(client, db, {
+const manager = new GiveawaysManager(client, {
+    mode: 'mysql',
+    connection: db
+}, {
+    embeds: {
+        // Optional embeds customisation
+    },
+    buttons: {
+        // optional buttons customisation
+    },
+    sendMessages: // Optionnal boolean option that trigger messages send (reroll and end messages)
+});
+manager.start();
+
+client.GiveawaysManager = manager;
+
+// This part is optional, it tells your code to add the manager definition in the client of Discord.JS for an easier usage of the manager
+declare module 'discord.js' {
+    interface Client {
+        GiveawaysManager: GiveawaysManager;
+    }
+}
+```
+
+This is how to do it with JSON :
+
+```ts
+import { Client } from 'discord.js';
+import { GiveawaysManager } from './GiveawayManager';
+
+const client = new Client({
+    intents: ['Guilds', 'GuildMessages', 'GuildMembers'],
+    partials: ['MESSAGES', 'CHANNELS']
+});
+
+
+const manager = new GiveawaysManager(client, {
+    mode: 'json',
+    path: './thePathToTheJSONFile'
+}, {
     embeds: {
         // Optional embeds customisation
     },

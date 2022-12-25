@@ -8,7 +8,7 @@ Then, once you created the table by using the command, you have to init the give
 
 First of all, take the manager in [`./container/javascript`](./container/javascript/)
 
-Here is the way yo create your Discord's Giveaway Manager by Greensky :
+Here is the way yo create your Discord's Giveaway Manager by Greensky with a MySQL database :
 
 ```js
 // Require the necessary discord.js classes
@@ -34,7 +34,10 @@ const db = mysql.createConnection({
 db.connect((error) => {
     if (error) throw error;
 
-    client.GiveawaysManager = new GiveawaysManager(client, db, {
+    client.GiveawaysManager = new GiveawaysManager(client, {
+        mode: 'mysql',
+        connection: db
+    }, {
         embeds: {
             // Optional embeds customisation
         },
@@ -43,10 +46,40 @@ db.connect((error) => {
         },
         sendMessages: // Optionnal boolean option that trigger messages send (reroll and end messages)
     });
-    client.GiveawaysManager.init();
+    client.GiveawaysManager.start();
 
     // And the Giveaways Manager is automatically launched
 });
+```
+
+This is how to do for JSON :
+
+```js
+// Require the necessary discord.js classes
+const { Client, GatewayIntentBits } = require('discord.js');
+const { token } = require('./config.json');
+
+
+// Require Giveaway Manager
+const GiveawayManager = require('./GiveawaysManager');
+
+// Create a new client instance
+const client = new Client({ intents: [ GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers ] });
+
+client.GiveawaysManager = new GiveawaysManager(client, {
+    mode: 'json',
+    path: './ThePathToTheJSONFile'
+}, {
+    embeds: {
+        // Optional embeds customisation
+    },
+    buttons: {
+        // Optional buttons customisation
+    },
+    sendMessages: // Optionnal boolean option that trigger messages send (reroll and end messages)
+});
+client.GiveawaysManager.start();
+
 ```
 
 ## Customisable
