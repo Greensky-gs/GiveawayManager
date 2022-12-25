@@ -5,22 +5,24 @@ import * as buttons from '../assets/buttons';
 import { Connection } from 'mysql';
 import { embedsInputData } from '../typings/embeds';
 import { buttonsInputData } from '../typings/buttons';
-import { ManagerEvents, ManagerListeners } from '../typings/managerEvents';
+import { Database, JSONDatabase, ManagerEvents, ManagerListeners, MySQLDatabase, databaseMode, databaseOptions } from '../typings/managerEvents';
+import EasyJsonDB from 'easy-json-database';
 
-export class GiveawayManager {
+export class GiveawayManager<DatabaseMode extends databaseMode> {
     public readonly client: Client;
     private embeds: embedsInputData = embeds;
     private buttons: buttonsInputData = buttons;
     private listeners: ManagerListeners<keyof ManagerEvents>[] = [];
     private sendMessages: boolean = true;
 
-    public database: Connection;
+    public database: Database<DatabaseMode>;
     private cache: Collection<string, gwT>;
     private ended: Collection<string, gwT>;
+    private mode: DatabaseMode;
 
     constructor(
         client: Client,
-        db: Connection,
+        database: databaseOptions<DatabaseMode>,
         options?: {
             embeds?: embedsInputData;
             buttons?: buttonsInputData;
@@ -29,11 +31,31 @@ export class GiveawayManager {
     ) {
         this.client = client;
         this.cache = new Collection();
+
         this.ended = new Collection();
-        this.database = db;
+        if (database.mode === 'json') {
+            const opts = database as { path: `./${string}`, mode: 'json' };
+            (this.database as JSONDatabase) = {
+                file: new EasyJsonDB(opts.path),
+                mode: 'json',
+                path: opts.path
+            }
+        } else if (database.mode === 'mysql') {
+            const opts = database as { mode: 'mysql', connection: Connection };
+            (this.database as MySQLDatabase) = {
+                mode: 'mysql',
+                connection: opts.connection
+            }
+        }
+        this.mode = database.mode;
+
         this.embeds = options?.embeds ? Object.assign(this.embeds, options.embeds) : this.embeds;
         this.buttons = options?.buttons ? Object.assign(this.buttons, options.buttons) : this.buttons;
         this.sendMessages = ![null, undefined].includes(options?.sendMessages) ? options.sendMessages : this.sendMessages;
+
+        if (this.database.mode === 'json') {
+            this.database
+        }
     }
     /**
      * @description Get the list of all the giveaways in JSON format.
@@ -471,11 +493,15 @@ export class GiveawayManager {
         }
     }
     private query = <R = any>(search: string) => {
-        return new Promise<R[]>((resolve, reject) => {
-            this.database.query(search, (error, request) => {
-                if (error) reject(error);
-                else resolve(request);
+        if (this.mode === 'mysql') {
+            return new Promise<R[]>((resolve, reject) => {
+                (this.database as databaseOptions<'mysql'>).connection.query(search, (error, request) => {
+                    if (error) reject(error);
+                    else resolve(request);
+                });
             });
-        });
+        } else {
+            (this.database as JSONDatabase).file
+        }
     };
 }
