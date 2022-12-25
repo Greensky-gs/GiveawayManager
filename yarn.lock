@@ -465,6 +465,11 @@ doctrine@^3.0.0:
   dependencies:
     esutils "^2.0.2"
 
+easy-json-database@^1.5.0:
+  version "1.5.0"
+  resolved "https://registry.yarnpkg.com/easy-json-database/-/easy-json-database-1.5.0.tgz#8c8fd85db32f6b6bba2de7959c5d820272bf6ce3"
+  integrity sha512-ccd5ALfo/GKfc8kRnG3Lib1dhLzEzv45/hvzjVfp7Np8RqbNsBCBTZvUGEkra5UshPR5DP1Q8FSIhqMwOIEMZQ==
+
 es-abstract@^1.19.0, es-abstract@^1.19.5, es-abstract@^1.20.4:
   version "1.20.4"
   resolved "https://registry.yarnpkg.com/es-abstract/-/es-abstract-1.20.4.tgz#1d103f9f8d78d4cf0713edcd6d0ed1a46eed5861"

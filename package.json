@@ -13,6 +13,7 @@
   "dependencies": {
     "@types/mysql": "^2.15.21",
     "discord.js": "^14.6.0",
+    "easy-json-database": "^1.5.0",
     "mysql": "^2.18.1"
   },
   "description": "A customisable giveaways manager for Discord.js v14 and mysql",
