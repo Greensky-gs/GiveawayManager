@@ -6,20 +6,23 @@ import { giveaway as Giveaway, giveawayInput } from './dist/typings/giveaway';
 export { embedsInputData } from './dist/typings/embeds';
 export { buttonsInputData } from './dist/typings/buttons';
 export { giveawayInput, giveaway as Giveaway } from './dist/typings/giveaway';
-import { ManagerEvents } from './dist/typings/managerEvents';
+import { ManagerEvents, databaseMode, databaseOptions } from './dist/typings/managerEvents';
 
-export class GiveawayManager {
+export class GiveawayManager<DatabaseMode extends databaseMode> {
     public readonly client: Client;
-    public database: Connection;
-    private cache: Collection<string, Giveaway>;
-    private ended: Collection<string, Giveaway>;
     private embeds: embedsInputData;
     private buttons: buttonsInputData;
+    private listeners: ManagerListeners<keyof ManagerEvents>[];
     private sendMessages: boolean;
+
+    public database: Database<DatabaseMode>;
+    private cache: Collection<string, gwT>;
+    private ended: Collection<string, gwT>;
+    private mode: DatabaseMode;
 
     public constructor(
         client: Client,
-        db: Connection,
+        database: databaseOptions<DatabaseMode>,
         options?: {
             embeds?: embedsInputData;
             buttons?: buttonsInputData;

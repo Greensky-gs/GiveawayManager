@@ -7,6 +7,7 @@ import { embedsInputData } from '../typings/embeds';
 import { buttonsInputData } from '../typings/buttons';
 import { Database, JSONDatabase, ManagerEvents, ManagerListeners, MySQLDatabase, databaseMode, databaseOptions } from '../typings/managerEvents';
 import EasyJsonDB from 'easy-json-database';
+import { writeFileSync } from 'fs';
 
 export class GiveawayManager<DatabaseMode extends databaseMode> {
     public readonly client: Client;
@@ -105,6 +106,9 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
         await this.query(
             `CREATE TABLE IF NOT EXISTS giveaways ( guild_id TEXT(255) NOT NULL, channel_id TEXT(255) NOT NULL, message_id TEXT(255) NOT NULL, hoster_id TEXT(255) NOT NULL, reward TEXT(255) NOT NULL, winnerCount INTEGER(255) NOT NULL DEFAULT "1", endsAt VARCHAR(1024) NOT NULL, participants LONGTEXT, required_roles LONGTEXT, denied_roles LONGTEXT, bonus_roles LONGTEXT, winners LONGTEXT, ended TINYINT(1) NOT NULL DEFAULT "0" );`
         );
+        if (this.mode === 'json') {
+            if (!(this.database as JSONDatabase).file.get('giveaways')) (this.database as JSONDatabase).file.set('giveaways', []);
+        }
         this.fillCache();
         setInterval(() => {
             this.cache
@@ -153,7 +157,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
                 reward: input.reward
             };
             this.cache.set(data.message_id, data);
-            await this.query(this.makeQuery(data));
+            this.insertGiveaway(data);
 
             this.client.emit('giveawayStarted', data, input.channel, input.hoster_id)
             resolve(data);
@@ -223,7 +227,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
 
             this.cache.delete(gw.message_id);
             this.ended.set(gw.message_id, gw);
-            await this.query(this.makeQuery(gw, true));
+            this.updateGiveaway(gw.message_id, gw);
 
             this.client.emit('giveawayEnded', gw, channel, winners);
             return resolve(winners);
@@ -267,8 +271,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
                     : this.embeds.winners(winners, this.getUrl(gw));
             if (this.sendMessages) await channel.send({ reply: { messageReference: message }, embeds: [em] }).catch(() => {});
 
-            let sql = this.makeQuery(gw, true);
-            await this.query(sql);
+            this.updateGiveaway(gw.message_id, gw);
 
             this.ended.set(input, gw);
 
@@ -300,7 +303,8 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
 
             await message.delete().catch(() => {});
             this[this.cache.has(gw.message_id) ? 'cache' : 'ended'].delete(gw.message_id);
-            await this.query(`DELETE FROM giveaways WHERE message_id='${gw.message_id}'`);
+
+            this.deleteGwDb(gw.message_id);
             return resolve(gw);
         });
     }
@@ -360,7 +364,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             .reply({ embeds: [this.embeds.participationRegistered(this.getUrl(gw))], ephemeral: true })
             .catch(() => {});
         this.cache.set(gw.message_id, gw);
-        this.query(this.makeQuery(gw, true));
+        this.updateGiveaway(gw.message_id, gw);
     }
     private unregisterParticipation(interaction: ButtonInteraction<'cached'>) {
         const gw = this.cache.get(interaction.message.id);
@@ -376,7 +380,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
 
         gw.participants = gw.participants.filter((x) => x !== interaction.user.id);
         this.cache.set(gw.message_id, gw);
-        this.query(this.makeQuery(gw, true));
+        this.updateGiveaway(gw.message_id, gw);
 
         interaction
             .reply({
@@ -486,10 +490,27 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
         return gw;
     }
     private async fillCache() {
-        const gws = await this.query<gwSql>('SELECT * FROM giveaways');
-        for (const g of gws) {
-            const gw = this.toObj(g);
-            this[gw.ended ? 'ended' : 'cache'].set(gw.message_id, gw);
+        const gws = await this.getDbGiveaways();
+
+        for (const gw of gws) {
+            const g = this.mode === 'json' ? gw : this.toObj(gw);
+            if (g.ended === true) this.ended.set(g.message_id, g);
+            else this.cache.set(g.message_id, g);
+        }
+    }
+    private databaseQuery<R = any>(sql: string): Promise<R[]> {
+        return new Promise((resolve, reject) => {
+            (this.database as MySQLDatabase).connection.query(sql, (error, request) => {
+                if (error) return reject(error);
+                return resolve(request);
+            })
+        })
+    }
+    private async getDbGiveaways(): Promise<gwT[]> {
+        if (this.mode === 'mysql') {
+            return await this.databaseQuery<gwT>(`SELECT * FROM giveaways`)
+        } else {
+            return (this.database as JSONDatabase).file.get('giveaways') as gwT[];
         }
     }
     private query = <R = any>(search: string) => {
@@ -500,8 +521,40 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
                     else resolve(request);
                 });
             });
-        } else {
-            (this.database as JSONDatabase).file
         }
     };
+    private updateGiveaway(message_id: string, data: gwT) {
+        if (data.message_id !== message_id) {
+            throw new Error('Critical: message_id and data.message_id are different. This should never appears, please contact the developper');
+        }
+        if (this.mode === 'json') {
+            const array = (this.database as JSONDatabase).file.get('giveaways') as gwT[];
+            const index = array.indexOf(array.find(x => x.message_id === message_id))
+
+            array[index] = data;
+            (this.database as JSONDatabase).file.set('giveaways', array);
+        } else {
+            this.query(this.makeQuery(data, true));
+        }
+    }
+    private insertGiveaway(data: gwT) {
+        if (this.mode === 'json') {
+            const array = (this.database as JSONDatabase).file.get('giveaways') as gwT[];
+            array.push(data);
+
+            (this.database as JSONDatabase).file.set('giveaways', array);
+        } else {
+            this.query(this.makeQuery(data, false));
+        }
+    }
+    private deleteGwDb(message_id: string) {
+        if (this.mode === 'json') {
+            const array = (this.database as JSONDatabase).file.get('giveaways') as gwT[];
+            array.splice(array.indexOf(array.find(x => x.message_id === message_id)), 1);
+
+            (this.database as JSONDatabase).file.set('giveaways', array);
+        } else {
+            this.query(`DELETE FROM giveaways WHERE message_id='${message_id}'`);
+        }
+    }
 }
