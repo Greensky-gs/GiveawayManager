@@ -2,6 +2,13 @@
 
 Here is the documentation of [Greensky's Giveaways Manager](https://github.com/Greensky-gs/GiveawayManager) for a TypeScript usage
 
+## Summary
+
+| Content | Section |
+| ------- | ------- |
+| Initialisation | [initialisation part](#initialisation) |
+| Customisation | [Customisation](#customisation) ([embeds](#customise-embeds) & [buttons](#customise-buttons)) |
+
 ## Initialisation
 
 First, install dependencies with yarn (if you don't have yarn, run `npm i -g yarn` in a command prompt)
@@ -31,13 +38,14 @@ const db = createConnection({
 
 const manager = new GiveawaysManager(client, {
     mode: 'mysql',
-    connection: db
-}, {
+    connection: db,
     embeds: {
         // Optional embeds customisation
+        // See the embed customisation part below
     },
     buttons: {
         // optional buttons customisation
+        // See the button customisation part below
     },
     sendMessages: // Optionnal boolean option that trigger messages send (reroll and end messages)
 });
@@ -67,13 +75,14 @@ const client = new Client({
 
 const manager = new GiveawaysManager(client, {
     mode: 'json',
-    path: './thePathToTheJSONFile'
-}, {
+    path: './thePathToTheJSONFile',
     embeds: {
         // Optional embeds customisation
+        // See the embed customisation part below
     },
     buttons: {
         // optional buttons customisation
+        // See the button customisation part below
     },
     sendMessages: // Optionnal boolean option that trigger messages send (reroll and end messages)
 });
@@ -93,10 +102,13 @@ Now you have your manager initialised on the client
 
 ## Customisation
 
-You can custom the appearance of the manager by modifying These 2 files :
+You can customise embeds and buttons of the manager by adding a value in `embeds` and `buttons` fields in the [initialisation part](#initialisation)
 
-* [`./assets/buttons.ts`](./container/typescript/assets/buttons.ts)
-* [`./assets/embeds.ts`](./container/typescript/assets/embeds.ts)
+### Customise embeds
+
+### Customise buttons
+
+When you initialise the 
 
 ## Methods
 
