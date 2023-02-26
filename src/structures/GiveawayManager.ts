@@ -55,7 +55,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
         this.sendMessages = ![null, undefined].includes(options?.sendMessages) ? options.sendMessages : this.sendMessages;
 
         if (this.database.mode === 'json') {
-            this.database
+            if (!this.database.file.get('giveaways')) this.database.file.set('giveaways', []);
         }
     }
     /**
@@ -500,7 +500,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
     }
     private databaseQuery<R = any>(sql: string): Promise<R[]> {
         return new Promise((resolve, reject) => {
-            (this.database as MySQLDatabase).connection.query(sql, (error, request) => {
+            (this.database as MySQLDatabase).connection.query(sql, (error: any, request: R[]) => {
                 if (error) return reject(error);
                 return resolve(request);
             })
@@ -516,7 +516,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
     private query = <R = any>(search: string) => {
         if (this.mode === 'mysql') {
             return new Promise<R[]>((resolve, reject) => {
-                (this.database as databaseOptions<'mysql'>).connection.query(search, (error, request) => {
+                (this.database as databaseOptions<'mysql'>).connection.query(search, (error: any, request: R[]) => {
                     if (error) reject(error);
                     else resolve(request);
                 });
