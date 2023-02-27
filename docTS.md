@@ -440,9 +440,72 @@ const manager = new GiveawayManager(
 
 This is the starting method of the manager
 
+Use it once after the module declaration
+
+```ts
+// Imports
+import { GiveawayManager } from 'discordjs-giveaways';
+import { Client, Partials } from 'discord.js';
+// If you use MySQL, un-comment the next line and set your database
+// import { createConnection } from 'mysql';
+
+// Declare client
+const client = new Client({
+    intents: ['Guilds'],
+    partials: [Partials.Message, Partials.Channel]
+});
+
+// Declare manager
+const manager = new GiveawayManager(client, 'set your config', {
+    // Optionnal options
+});
+
+// Start method
+manager.start();
+```
+
+**Declaration :**
+
+```ts
+public start(): void
+```
+
 ### createGiveaway()
 
-This method
+This method creates a giveaway
+
+```ts
+client.on('messageCreate', (message) => {
+    // This is the creation part
+    manager.createGiveaway({
+        // Required options
+        guild_id: message.guild.id,
+        channel: message.channel,
+        hoster_id: message.author.id,
+        reward: message.content,
+        winnerCount: 1,
+        time: 60000, // 1 hour
+        // Optionnal options
+        required_roles: [message.member.roles.highest.id],
+        denied_roles: [message.guild.members.me.roles.highest.id],
+        bonus_roles: ['1234567895691']
+    })
+})
+```
+
+Arguments :
+
+* `input` : [giveawayInput](#giveaway-input)
+
+Returns : [giveaway](#giveaway-type)
+
+**Declaration :**
+
+```ts
+import { giveawayInput, giveaway } from 'discordjs-giveaways';
+
+public createGiveaway(input: giveawayInput): Promise<giveaway>
+```
 
 ## Types
 
