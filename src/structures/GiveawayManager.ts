@@ -1,5 +1,5 @@
 import { ButtonBuilder, ButtonInteraction, Client, Collection, Guild, Message, TextChannel } from 'discord.js';
-import { giveaway as gwT, giveawayInput, gwSql } from '../typings/giveaway';
+import { giveaway as gwT, giveawayInput } from '../typings/giveaway';
 import * as embeds from '../assets/embeds';
 import * as buttons from '../assets/buttons';
 import { Connection } from 'mysql';
@@ -7,7 +7,6 @@ import { embedsInputData } from '../typings/embeds';
 import { buttonsInputData } from '../typings/buttons';
 import { Database, JSONDatabase, ManagerEvents, ManagerListeners, MySQLDatabase, databaseMode, databaseOptions } from '../typings/managerEvents';
 import EasyJsonDB from 'easy-json-database';
-import { writeFileSync } from 'fs';
 
 export class GiveawayManager<DatabaseMode extends databaseMode> {
     public readonly client: Client;
@@ -96,12 +95,6 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             run
         } as ManagerListeners<keyof ManagerEvents>);
     }
-    private emit<Key extends keyof ManagerEvents>(event: Key, ...args: ManagerEvents[Key]) {
-        const listeners = this.listeners.filter(x => x.event === event);
-        listeners.forEach((l) => {
-            (l.run as (...args: unknown[]) => void | unknown)(...args);
-        })
-    }
     public async start() {
         await this.query(
             `CREATE TABLE IF NOT EXISTS giveaways ( guild_id TEXT(255) NOT NULL, channel_id TEXT(255) NOT NULL, message_id TEXT(255) NOT NULL, hoster_id TEXT(255) NOT NULL, reward TEXT(255) NOT NULL, winnerCount INTEGER(255) NOT NULL DEFAULT "1", endsAt VARCHAR(1024) NOT NULL, participants LONGTEXT, required_roles LONGTEXT, denied_roles LONGTEXT, bonus_roles LONGTEXT, winners LONGTEXT, ended TINYINT(1) NOT NULL DEFAULT "0" );`
@@ -133,8 +126,8 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
                     embeds: [embed],
                     components: [
                         buttons.getAsRow<ButtonBuilder>([
-                            this.buttons.participate(),
-                            this.buttons.cancelParticipation()
+                            this.buttons.participate('gw-participate'),
+                            this.buttons.cancelParticipation('gw-unparticipate')
                         ])
                     ]
                 })
@@ -219,7 +212,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             const em =
                 gw.winners.length === 0
                     ? this.embeds.noEntries(this.getUrl(gw))
-                    : this.embeds.winners(winners, this.getUrl(gw));
+                    : this.embeds.winners(winners, gw, this.getUrl(gw));
             if (this.sendMessages) await channel.send({ reply: { messageReference: message }, embeds: [em] }).catch((e) => {
                 console.log(e);
             });
@@ -268,7 +261,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             const em =
                 gw.winners.length === 0
                     ? this.embeds.noEntries(this.getUrl(gw))
-                    : this.embeds.winners(winners, this.getUrl(gw));
+                    : this.embeds.winners(winners, gw, this.getUrl(gw));
             if (this.sendMessages) await channel.send({ reply: { messageReference: message }, embeds: [em] }).catch(() => {});
 
             this.updateGiveaway(gw.message_id, gw);

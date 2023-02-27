@@ -6,327 +6,498 @@ Here is the documentation of [Greensky's Giveaways Manager](https://github.com/G
 
 | Content | Section |
 | ------- | ------- |
-| Initialisation | [initialisation part](#initialisation) |
-| Customisation | [Customisation](#customisation) ([embeds](#customise-embeds) & [buttons](#customise-buttons)) |
+| Initialisation | [initialisation part](#initialisation) ([MySQL](#mysql-initialisation) & [JSON](#json-initialisation)) |
+| Customisation | [Customisation](#customisation) ([embeds](#customise-embeds), [buttons](#customise-buttons) & [sendMessages](#sendmessages-option)) |
+| Methods | [list of methods](#methods) |
+| Types | [List of types](#types) |
+| Examples | [See examples](#examples) |
 
 ## Initialisation
 
-First, install dependencies with yarn (if you don't have yarn, run `npm i -g yarn` in a command prompt)
+Install the manager using the command `npm install discordjs-giveaways`
 
-Install dependencies : `yarn install`
+Then, you can initiate two different ways, with a [JSON initialisation](#json-initialisation), or with a [MySQL initialisation](#mysql-initialisation)
 
-The manager is in [`./container/typescript`](./container/typescript/)
+### JSON initialisation
 
-Once you got your files, write this to initiate the manager for MySQL
-
-```ts
-import { Client } from 'discord.js';
-import { GiveawaysManager } from './GiveawayManager';
-import { createConnection } from './mysql';
-
-const client = new Client({
-    intents: ['Guilds', 'GuildMessages', 'GuildMembers'],
-    partials: ['MESSAGES', 'CHANNELS']
-});
-
-const db = createConnection({
-    host: 'database host',
-    username: 'database username',
-    password: 'database password',
-    database: 'database name'
-})
-
-const manager = new GiveawaysManager(client, {
-    mode: 'mysql',
-    connection: db,
-    embeds: {
-        // Optional embeds customisation
-        // See the embed customisation part below
-    },
-    buttons: {
-        // optional buttons customisation
-        // See the button customisation part below
-    },
-    sendMessages: // Optionnal boolean option that trigger messages send (reroll and end messages)
-});
-manager.start();
-
-client.GiveawaysManager = manager;
-
-// This part is optional, it tells your code to add the manager definition in the client of Discord.JS for an easier usage of the manager
-declare module 'discord.js' {
-    interface Client {
-        GiveawaysManager: GiveawaysManager;
-    }
-}
-```
-
-This is how to do it with JSON :
+If you want to use the manager with a JSON storage, use it like so :
 
 ```ts
-import { Client } from 'discord.js';
-import { GiveawaysManager } from './GiveawayManager';
+// Imports
+import { GiveawayManager } from 'discordjs-giveaways';
+import { Client, Partials } from 'discord.js';
 
+// Create client and manager
 const client = new Client({
-    intents: ['Guilds', 'GuildMessages', 'GuildMembers'],
-    partials: ['MESSAGES', 'CHANNELS']
+    intents: ['Guilds'],
+    partials: [Partials.Message, Partials.Channel]
 });
 
-
-const manager = new GiveawaysManager(client, {
+const manager = new GiveawayManager(client, {
     mode: 'json',
-    path: './thePathToTheJSONFile',
-    embeds: {
-        // Optional embeds customisation
-        // See the embed customisation part below
-    },
-    buttons: {
-        // optional buttons customisation
-        // See the button customisation part below
-    },
-    sendMessages: // Optionnal boolean option that trigger messages send (reroll and end messages)
+    path: './giveaways.json'
 });
+
+// Start manager
 manager.start();
-
-client.GiveawaysManager = manager;
-
-// This part is optional, it tells your code to add the manager definition in the client of Discord.JS for an easier usage of the manager
-declare module 'discord.js' {
-    interface Client {
-        GiveawaysManager: GiveawaysManager;
-    }
-}
 ```
 
-Now you have your manager initialised on the client
+If you want to customise buttons, and embeds, you can see the [customisation part](#customisation)
+
+### MySQL initialisation
+
+If you want to use the manager with a [MySQL](https://www.npmjs.com/package/mysql) database, you first need to install [MySQL](https://www.npmjs.com/package/mysql) (if it isn't done, use `npm install mysql @types/mysql`)
+
+Then, import the manager, the client and the database and create the manager
+
+```ts
+// Imports
+import { GiveawayManager } from 'discord.js-giveaways';
+import { Client, Partials } from 'discord.js';
+import { createConnection } from 'mysql';
+
+// Create Client and MySQL connection
+const client = new Client({
+    intents: ['Guilds'],
+    partials: [Partials.Message, Partials.Channel]
+});
+const database = createConnection({
+    user: 'database user',
+    password: 'database password',
+    database: 'database name',
+    host: 'database host'
+});
+
+// Create manager
+const manager = new GiveawayManager(client, {
+    mode: 'mysql',
+    connection: database
+});
+
+// Start manager
+
+manager.start();
+```
+
+If you want to customise the embeds and the buttons, see the [customisation part](#customisation)
 
 ## Customisation
 
-You can customise embeds and buttons of the manager by adding a value in `embeds` and `buttons` fields in the [initialisation part](#initialisation)
+You may want to change the embeds when you use the manager
+
+The fields `embeds` and `buttons` are made for this in the options parameter of the manager
+
+You also can toggle the send of a message when a giveaway ends/reroll by activating the [SendMessages option](#sendmessages-option)
 
 ### Customise embeds
 
-### Customise buttons
-
-When you initialise the 
-
-## Methods
-
-The manager has methods to use to manage giveaways
-
-:warning: Remember that all methods have a description when you use it.
-
-:warning: Almost all methods return a promise
-
-If you want to see them, add the optional part in your TypeScript file
-
-### Create a giveaway
-
-Use the `createGiveaway()` method of the manager to create a giveaway
+If you want to customise embeds, use the `embeds` field in the `options` parameter of the manager
 
 ```ts
-client.GiveawaysManager.createGiveaway({
-    guild_id: 'GUILD ID',
-    channel: a text channel,
-    hoster_id: 'hoster id (person who started the giveaway)',
-    reward: 'Reward of the giveaway',
-    winnerCount: /* Amount of winners (as a number) */,
-    time: /* Time in milliseconds of the giveaway */,
-    // These 3 parameters are optional
-    required_roles: ['ID required role 1', 'ID required role 2' /* ... */],
-    denied_roles: ['ID denied role 1', 'ID denied role 2' /* ... */],
-    bonus_roles: ['ID bonus role 1', 'ID bonus role 2' /* ... */],
-})
+const databaseConfig = 'Your database configuration';
+const manager = new GiveawayManager(
+    client,
+    databaseConfig,
+    // Options
+    {
+        embeds: {
+            // Put all your embeds here
+        }
+    }
+)
 ```
 
-#### Returns once created
+#### Keys
 
-Once the promise is finished, it resolves a [giveaway](#giveaway)
+The keys to put in the `embeds` field are very precise for the manager to work. Here is how to use them
 
-:warning: This promise can be **rejected**, so you have to use a `catch` block.
-
-The promise is rejected when the message is not sent
-
-### End a giveaway
-
-Use the `endGiveaway()` method to end a giveaway
+They are functions that returns embed.
+For instance :
 
 ```ts
-(async() => {
-    // IMPORTANT
-    // The await is necessary to get a value and not a promise
-    // The parameter is only a message ID (specified in method description)
-    const result = await client.GiveawaysManager.endGiveaway('giveaway message ID');
-})()
+const winners = (winners: string[], data: giveaway, url: string) => {
+    // Returns an embed
+    return new EmbedBuilder()
+        .setTitle("Winner")
+        .setDescription(`Congrats ${winners.map(x => `<@${x}>`).join(' ')}! You won ${data.reward} !`)
+        .setURL(url)
+        .setColor('Yellow')
+}
 ```
 
-#### Returns once ended
+| Embed name | Usage | Reference |
+| ---------- | ----- | --------- |
+| `giveaway` | Used on the creation of the giveaway | [usage](#giveaway-embed) |
+| `ended` | Used on the giveaway message, when the giveaway is ended | [usage](#giveaway-ended-embed) |
+| `hasDeniedRoles` | Reply to the user when user one of denied roles | [usage](#denied-roles-embed)
+| `missingRrequiredRoles` | Reply to the user when user doesn't have one of the required roles to participate | [usage](#required-roles-embed) |
+| `entryAllowed` | ~~Used to say to the user that his participation has been validated and registered~~ | [usage](#entry-allowed-embed) ⚠️ ~~deprecated~~ |
+| `alreadyParticipate` | Reply to the user to say that he already participated to the giveaway | [usage](#already-participate-embed) |
+| `notParticipated` | Reply to the user to say that he doesn't participate to the giveaway, so he can't unparticipate | [usage](#not-participated-embed) |
+| `removeParticipation` | Reply to the user to say that his participation has been removed | [usage](#remove-participation-embed) |
+| `winners` | Reply to the channel when the giveaway is over/rerolled, that at least one winner can be determined and the [sendMessage option](#sendmessages-option) is enabled | [usage](#winners-embed) |
+| `noEntries` | Reply to the channel when the giveaway is over/rerolled, that no winner can be determined and the [sendMessage option](#sendmessages-option) is enabled | [usage](#sendmessages-option) |
+| `particpationRegistered` | Reply to the user to say that his participation has been validated and registered | [usage](#participation-registered-embed) |
 
-The promise is always resolved, the possible values are these :
+> All these keys are optional, you can put one of them or all of them
 
-* `no giveaway` (string) - giveaway not found (maybe the giveaway is ended)
-* `no guild` (string) - Server not found
-* `no channel` (string) - Channel not found
-* `no message` (string) - giveaway message not found
-* string[] - An array with winners ID - :warning: Be careful, the array can potentialy be empty
+##### Giveaway embed
 
-### Fetch a giveaway
+The most complex one, it takes an argument of [giveaway type](#giveaway-type) **and** the list of all participants (empty array when it starts)
 
-Use the `fetchGiveaway()` method of the manager to get a giveaway
-
-:warning: This method is not a promise
+You can use it like so
 
 ```ts
-client.GiveawaysManager.fetchGiveaway(messsage.id);
-client.GiveawaysManager.fetchGiveaway(message.guild.id, true);
-client.GiveawaysManager.fetchGiveaway(message.mentions.channels.first(), false);
+export const giveaway = (data: giveaway & { participants: string[] }) => {
+    // Returns an embed
+    return new EmbedBuilder()
+        .setTitle(`Giveaway`)
+        .setDescription(`Giveaway hosted by <@${data.hoster_id}> ! Click on the button to try to win **${data.reward}**\nEnds <t:${Math.floor(data.endsAt / 1000)}:F>\n\n**${participants.length}** entries`)
+        .setColor(data.endsAt - Date.now() < 10000 ? '#ff0000' : '#00ff00')
+        .setTimestamp(new Date(data.endsAt))
+}
 ```
 
-#### Fetch parameters
+> Note: the `<t:${Math.floor(data.endsAt / 1000)}:F>` will display a timestamp on Discord like `in 1 hour`<br>
+> This line `.setColor(data.endsAt - Date.now() < 10000 ? '#ff0000' : '#00ff00')` will make the embed red if the giveaway ends in less than 10 seconds
 
-* input (string) - **required** : ID of the message, channel or server
+##### Giveaway ended embed
 
-> In case of channel or guild ID, it will return the last giveaway registered
+This is the embed replacing the [giveaway embed](#giveaway-embed) once the giveaway is over
 
-* force (boolean) - **optional** - default `false` : Tells the method that you also want to check in the ended giveaways
-
-#### Fetch returns
-
-The method can return 2 values :
-
-* `undefined` : When no giveaway is found
-* [`a giveaway`](#giveaway) : giveaway data
-
-### Reroll a giveaway
-
-Use the `reroll()` method of the manager to reroll a giveaway
+This embed takes a [giveaway](#giveaway-type) and an array of strings, representing the identifiers of winners, as arguments
 
 ```ts
-client.GiveawaysManager.reroll('Giveaway message ID');
+const ended = (data: giveaway, winners: string[]) => {
+    // Returns an embed
+    return new EmbedBuilder()
+        .setTitle("Giveaway ended")
+        .setDescription(`This giveaway is ended.\n${data.reward}\nWinners: ${data.winners.length > 0 ? data.winners.map(w => `<@${w}>`).join(' ') : 'No winner'}`)
+        .setTimestamp()
+        .setColor('#ff0000')
+}
 ```
 
-#### Returns of a reroll
+##### denied roles embed
 
-A reroll is always resolved ; the possible values are :
+This is the embed replied as ephemeral when the user tries to participate to a giveaway with one of the denied roles
 
-* `not ended` : giveaway not ended
-* `no giveaway` : Giveaway not found
-* `no guild` : server not found
-* `no channel` : channel not found
-* `no message` : message not found
-* string[] - array : winners ID in an array ~ :warning: Be careful, the array can be empty
-
-### Delete a giveaway
-
-Use the `deleteGiveaway()` method of the manager to delete a giveaway
+The parameters are an array of strings, representing the identifiers of roles, and a string, wich is the URL to the giveaway
 
 ```ts
-client.GiveawaysManager.deleteGiveaway('giveaway message ID');
+export const hasDeniedRoles = (deniedRoles: string[], url: string) => {
+    // Returns an embed
+    return new EmbedBuilder()
+        .setTitle("Denied roles")
+        .setDescription(`Your participation to [**this giveaway**](${url}) has been rejected, because you have one of the denied roles of the giveaway (you got ${deniedRoles.map(r => `<@&${r}>`).join(' ')})`)
+        .setColor('#ff0000')
+}
 ```
 
-#### Returns of a delete
+##### required roles embed
 
-Once the giveaway is deleted and erased from the database, it returns one of these values (promise always resolved) :
+This is the embed replied as ephemeral when the user tries to participate without having all the required roles
 
-* `no giveaway` (string) - giveaway not found (maybe the giveaway is ended)
-* `no guild` (string) - Server not found
-* `no channel` (string) - Channel not found
-* `no message` (string) - giveaway message not found
-* [`a giveaway`](#giveaway) - Giveaway data
-
-## Propreties
-
-Here is the list of all propreties usable
-
-### Client
-
-`client` proprety of the manager is the client that you put when initialise the giveaway
-
-### List
-
-This proprety returns the current giveaways and the ended ones under JSON format (as an array of [giveaways](#giveaway))
+The parameters are an array of strings, representing the identifiers of missing roles, and a string, wich is the URL to the giveaway
 
 ```ts
-const list = client.GiveawaysManager.list;
-console.log(list);
-// {
-//    ended: giveaway[],
-//    giveaways: giveaway[]
-// }
+export const missingRequriedRoles = (requiredRoles: string[], url: string) => {
+    // Returns an embed
+    return new EmbedBuilder()
+        .setTitle("Required roles")
+        .setDescription(`Your participation to [**this giveaway**](${url}) has been rejected, because you don't have all the required roles of the giveaway (you miss ${deniedRoles.map(r => `<@&${r}>`).join(' ')})`)
+        .setColor('#ff0000')
+}
 ```
 
-### Map
+##### entry allowed embed
 
-`map` proprety returns the current giveaways and the ended ones as a map
+⚠️ This embed is **deprecated**, use the [participation registered embed](#participation-registered-embed) instead
+
+##### already participate embed
+
+This is the embed replied as ephemeral when the user hits the `Participate` button when he already participates to the giveaway
+
+The parameter is the URL to the giveaway
 
 ```ts
-const map = client.GiveawaysManager.map;
-console.log(map);
-// {
-//     ended: Map<string, giveaway>,
-//     giveaways: Map<string, giveaway>
-// }
+export const alreadyParticipate = (url: string) => {
+    // Returns an embed
+    return new EmbedBuilder()
+        .setTitle('Already participated')
+        .setDescription(`You already participate to [**this giveaway**](${url}).`)
+        .setColor('#ff0000');
+}
 ```
 
-### Collection
+##### not participated embed
 
-`collection` proprety returns the current giveaways and ended ones as a Discord Collection
+This is the embed replied as ephemeral when the user hits the `Unparticipate` button whithout participating to the giveaway
+
+The parameter is the URL to the giveaway
 
 ```ts
-import { Collection } from 'discord.js';
-
-const collection = new client.GiveawaysManager.collection;
-console.log(collection);
-// {
-//     ended: Collection<string, giveaway>,
-//     giveaways: Collection<string, giveaway>
-// }
+export const notParticipated = (url: string) => {
+    // Returns an embed
+    return new EmbedBuilder()
+        .setTitle('Not participed')
+        .setDescription(`You have not participated to [**this giveaway**](${url})`)
+        .setColor('#ff0000');
+}
 ```
 
-## Giveaway
+##### remove participation embed
 
-The giveaway type is very often used, here is the list of the propreties that you can use :
+This is the embed replied as ephemeral to the user when he successfully remove his participation after clicking on the `Unparticipate button`
+
+The parameter is the URL to the giveaway
 
 ```ts
-export type giveaway = {
-    guild_id: string; // Server ID
-    channel_id: string; // Channel ID
-    message_id: string; // Message ID
-    hoster_id: string; // Hoster ID (person who started the giveaway)
-    reward: string; // Reward of the giveaway
-    winnerCount: number; // Winners count
-    endsAt: number; // end date (as machine format [156456156464896])
-    participants: string[]; // all participants IDs
-    required_roles: string[]; // Required roles IDs
-    denied_roles: string[]; // Denied roles IDs
-    bonus_roles: string[]; // Bonus roles IDs
-    winners: string[]; // Winners IDs (empty before being ended)
-    ended: boolean; // If the giveaway is ended
+export const removeParticipation = (url: string) => {
+    // Returns an embed
+    return new EmbedBuilder()
+        .setTitle('Entry removed')
+        .setDescription(`I removed your entry to [**this giveaway**](${url}).`)
+        .setColor('#00ff00')
+}
+```
+
+##### winners embed
+
+This is the embed sent in the channel when :
+
+1. The giveaway is over
+2. At least one winner can be determined
+3. The [sendMessages option](#sendmessages-option) is enabled
+
+The parameters are :
+
+1. An array of strings (identifiers of winners)
+2. the [giveaway](#giveaway-type)
+3. The URL to the giveaway
+
+```ts
+export const winners = (winners: string[], gw: giveaway, url: string) => {
+    // Returns an embed
+    return new EmbedBuilder()
+        .setTitle("Winners")
+        .setDescription(`Congrats ${winners.map(w => `<@${w}>`).join(' ')}! You won ${gw.reward} !`)
+        .setColor('#ff0000')
+        .setURL(url)
+}
+```
+
+##### No entries embed
+
+This is the embed sent in the channel when :
+
+1. The giveaway is over
+2. At least one winner can be determined
+3. The [sendMessages option](#sendmessages-option) is enabled
+
+The only parameter is the URL to the giveaway
+
+```ts
+export const noEntries = (url: string) => {
+    // Returns an embed
+    return new EmbedBuilder()
+        .setTitle('No winner')
+        .setDescription(`No winner can be found for [**this giveaway**](${url})`)
+        .setColor('#ff0000');
 };
 ```
 
-## Useful informations
+##### Participation registered embed
 
-Here are some useful informations if you want to master the [giveaway manager](https://github.com/Greensky-gs/GiveawayManager) 🥷
+This is the embed replied to the user when his participation is successfully registered
 
-### Bonus Roles
+The parameter is the URL to the giveaway
 
-Bonus roles are roles that give 1 more entry per role if you have it
-> Let's say that 10 persons who parcitipate to a giveaway</br>
-> This giveaway has 1 bonus role</br>
-> A person has THE bonus role</br>
-> Consequently, this person has 2 chances out of 11 to win, and others one have 1 chance out of 11
+```ts
+export const participationRegistered = (url: string) => {
+    // Returns an embed
+    return new EmbedBuilder()
+        .setTitle("Participation registered")
+        .setColor('#00ff00')
+        .setDesscription(`Your participation to [**this giveaway**](${url}) has been registered`)
+}
+```
 
-### Required Roles
+### Customise buttons
 
-Required roles are roles to have if you want to participate to the giveaway
+If you want to customise buttons of the, you can do it by adding functions in the `buttons` field of the options of the manager
 
-### Denied Roles
+```ts
+const databaseConfig = "Your database config";
+const manager = new GiveawayManager(
+    // Required
+    client,
+    databaseConfig,
+    // Optional
+    {
+        buttons: {
+            // Put keys here
+        }
+    }
+)
+```
 
-Denied roles are roles to not have if you want to participate to the giveaway
+⚠️ Both functions have only one parameter, wich is `customId`<br>
+You have to use it in the `.setCustomId()` method, otherwise the manager will not work correctly
 
-## Finished
+#### Participate button
 
-Wow ! You read all the doc ! Congrats !
+You can customise the participation button by modifying the `participate` function in the `buttons` field.
 
-Don't forget, if you have any issue, problem or advise, open an [issue](https://github.com/Greensky-gs/GiveawayManager/issues/new) or contact me [on discord](https://discord.gg/fHyN5w84g6)
+Here is how to do :
+
+```ts
+// Imports
+import { ButtonBuilder, ButtonStyle } from 'discord.js';
+
+const databaseConfig = "Your database config";
+const manager = new GiveawayManager(
+    // Required
+    client,
+    databaseConfig,
+    // Optional
+    {
+        buttons: {
+            // Participate method
+            participate: (customId: string) => {
+                // Returns a button
+                return new ButtonBuilder()
+                    .setLabel('Participate')
+                    .setStyle(ButtonStyle.Success)
+                    // Important ! set the customId using the `customId` parameter
+                    .setCustomId(customId)
+            }
+        }
+    }
+)
+```
+
+#### Unparticipate button
+
+You can customise the unparticipation button by modifying the `cancelParticipation` function in the `buttons` field.
+
+Here is how to do :
+
+```ts
+// Imports
+import { ButtonBuilder, ButtonStyle } from 'discord.js';
+
+const databaseConfig = "Your database config";
+const manager = new GiveawayManager(
+    // Required
+    client,
+    databaseConfig,
+    // Optional
+    {
+        buttons: {
+            // cancelParticipation method
+            cancelParticipation: (customId: string) => {
+                // Returns a button
+                return new ButtonBuilder()
+                    .setLabel('Unparticipate')
+                    .setStyle(ButtonStyle.Danger)
+                    // Important ! set the customId using the `customId` parameter
+                    .setCustomId(customId)
+            }
+        }
+    }
+)
+```
+
+### SendMessages option
+
+You can activate the `sendMessage` feature of the manager. This feature allows the bot to send messages at the end/reroll of a giveaway.
+
+The default value is `true`
+
+The message sent can only be either [winners embed](#winners-embed) or [no entries embed](#no-entries-embed)
+
+> If the giveaway ends/reroll with no valid participation, it'll send the [no entries embed](#no-entries-embed), and will send the winners by the [winners embed](#winners-embed)
+
+```ts
+const databaseConfig = "Your database configuration";
+const client = new Client({ /* options */ });
+const manager = new GiveawayManager(
+    // Required
+    client,
+    databaseConfig,
+    // Options
+    {
+        // Send messages option
+        sendMessages: true
+    }
+)
+```
+
+## Methods
+
+### Start()
+
+This is the starting method of the manager
+
+### createGiveaway()
+
+This method
+
+## Types
+
+Some types are used in this manager, here are the explanations one few of them
+
+### Giveaway type
+
+This is the most used type in the manager, returned by most of the [methods](#methods).
+
+It is declared by :
+
+```ts
+export type giveaway = {
+    guild_id: string; // Id of the server
+    channel_id: string; // Id of the channel
+    message_id: string; // Id of the message
+    hoster_id: string; // Id of the hoster
+    reward: string; // Price of the giveaway (ex: Lofi Girl on your server)
+    winnerCount: number; // Number of winners
+    endsAt: number; // Date of end of the giveaway (in milliseconds)
+    participants: string[]; // All identifiers of the participants
+    required_roles: string[]; // The identifiers of the required roles
+    denied_roles: string[]; // The identifiers of the denied roles
+    bonus_roles: string[]; // The identifiers of the bonus roles
+    winners: string[]; // The identifiers of the winners. Empty array when giveaway not ended
+    ended: boolean; // State of the giveaway
+};
+```
+
+### Giveaway Input
+
+This is the type used by the [`createGiveaway()` method](#creategiveaway) and the [giveaway display embed](#giveaway-embed)
+
+It takes some of the values of [giveaway Type](#giveaway-type), with some removed because they can't be determined yet.
+
+It is declared by :
+
+```ts
+export type giveawayInput = {
+    // All of them are always declared
+    guild_id: string; // The identifier of the server
+    channel: TextChannel; // The channel of the giveaway (as a Text Channel)
+    hoster_id: string; // The identifier of the hoster
+    reward: string; // The reward of the giveaway
+    winnerCount: number; // The number of winners
+    time: number; // The time of the giveaway (in milliseconds)
+    // These ones are optionnal, so they can be null
+    required_roles?: string[]; // The id of required roles
+    denied_roles?: string[]; // The id of denied roles
+    bonus_roles?: string[]; // The id of bonus roles
+};
+```
+
+## Examples
+
+Here are few examples of the usage of the manager :
+
+* [Draver Bot](https://github.com/DraverBot/DraverBot) ([Manager declaration](https://github.com/DraverBot/DraverBot/blob/master/src/events/ready.ts#L39-L43), [embeds customisation](https://github.com/DraverBot/DraverBot/blob/master/src/data/giveaway.ts), [buttons customisation](https://github.com/DraverBot/DraverBot/blob/master/src/data/buttons.ts))

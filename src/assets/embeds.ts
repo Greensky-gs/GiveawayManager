@@ -94,7 +94,7 @@ export const removeParticipation = (url: string) => {
         .setDescription(`I removed your entry to [**this giveaway**](${url}).`)
         .setColor('#00ff00');
 };
-export const winners = (winners: string[], url: string) => {
+export const winners = (winners: string[], data: gw, url: string) => {
     return new EmbedBuilder()
         .setTitle('🎉 Winners')
         .setDescription(

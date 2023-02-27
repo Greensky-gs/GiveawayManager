@@ -1,17 +1,17 @@
 import { ButtonBuilder, ActionRowBuilder, ButtonStyle, AnyComponentBuilder } from 'discord.js';
 
-export const participate = () => {
+export const participate = (customId: string) => {
     const button = new ButtonBuilder()
-        .setCustomId('gw-participate')
+        .setCustomId(customId)
         .setStyle(ButtonStyle.Success)
         .setLabel('Participate')
         .setEmoji('🎉');
 
     return button;
 };
-export const cancelParticipation = () => {
+export const cancelParticipation = (customId: string) => {
     const button = new ButtonBuilder()
-        .setCustomId('gw-unparticipate')
+        .setCustomId(customId)
         .setLabel('Unparticipate')
         .setStyle(ButtonStyle.Danger);
 

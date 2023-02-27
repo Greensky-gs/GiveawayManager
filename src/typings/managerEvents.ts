@@ -24,5 +24,5 @@ export type JSONDatabase = {
 
 export type databaseOptions<Mode extends databaseMode> = {
     mode: Mode
-} & ( Mode extends 'json' ? { path: `./${string}` } : Mode extends 'mysql' ? { connection: Connection } : {} );
+} & ( Mode extends 'json' ? { path: `./${string}.json` } : Mode extends 'mysql' ? { connection: Connection } : {} );
 export type Database<Mode extends databaseMode> = Mode extends 'json' ? JSONDatabase : MySQLDatabase;
