@@ -1,6 +1,6 @@
 {
   "name": "discordjs-giveaways",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "main": "dist/index.js",
   "files": [
     "./dist",
@@ -11,7 +11,7 @@
   "author": "Greensky <david.hesliere@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "discord.js": "^14.6.0",
+    "discord.js": "^14.9.0",
     "easy-json-database": "^1.5.0",
     "fs": "^0.0.1-security",
     "mysql": "^2.18.1"
