@@ -422,7 +422,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             let participants: string[] = [];
 
             for (const id of gw.participants) {
-                const member = await guild.members.fetch(id);
+                const member = await guild.members.fetch(id).catch(() => {});
                 if (!member) return;
 
                 participants.push(id);
