@@ -11,9 +11,8 @@
   "author": "Greensky <david.hesliere@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "discord.js": "^14.9.0",
-    "easy-json-database": "^1.5.0",
-    "fs": "^0.0.1-security",
+    "discord.js": "^14.19.3",
+    "easy-json-database": "^1.5.1",
     "mysql": "^2.18.1"
   },
   "description": "A customisable giveaways manager for Discord.js v14 and mysql",
@@ -43,12 +42,6 @@
   },
   "devDependencies": {
     "@types/mysql": "^2.15.21",
-    "@typescript-eslint/eslint-plugin": "^5.0.0",
-    "eslint": "^8.0.1",
-    "eslint-config-standard-with-typescript": "^23.0.0",
-    "eslint-plugin-import": "^2.25.2",
-    "eslint-plugin-n": "^15.0.0",
-    "eslint-plugin-promise": "^6.0.0",
     "prettier": "^2.7.1",
     "tsc": "^2.0.4",
     "typescript": "*"
