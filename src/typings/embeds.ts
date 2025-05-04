@@ -7,7 +7,7 @@ export type embedsInputData = {
     hasDeniedRoles?: (deniedRoles: string[], url: string) => Embed | EmbedBuilder;
     missingRequiredRoles?: (requiredRoles: string[], url: string) => Embed | EmbedBuilder;
     /**
-     * 
+     *
      * @param url URL of the giveaway
      * @returns An ambed
      * @deprecated Use `participationRegistered` instead

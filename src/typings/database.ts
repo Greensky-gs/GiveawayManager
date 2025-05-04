@@ -42,4 +42,10 @@ export type databaseOptions<Mode extends databaseMode> = {
     : Mode extends 'sequelize'
     ? databaseOptionsSequelize
     : {});
-export type Database<Mode extends databaseMode> = Mode extends 'json' ? JSONDatabase : Mode extends 'mysql' ? MySQLDatabase : Mode extends 'sequelize' ? SequelizeDatabase : never;
+export type Database<Mode extends databaseMode> = Mode extends 'json'
+    ? JSONDatabase
+    : Mode extends 'mysql'
+    ? MySQLDatabase
+    : Mode extends 'sequelize'
+    ? SequelizeDatabase
+    : never;

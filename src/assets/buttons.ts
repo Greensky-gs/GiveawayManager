@@ -10,10 +10,7 @@ export const participate = (customId: string) => {
     return button;
 };
 export const cancelParticipation = (customId: string) => {
-    const button = new ButtonBuilder()
-        .setCustomId(customId)
-        .setLabel('Unparticipate')
-        .setStyle(ButtonStyle.Danger);
+    const button = new ButtonBuilder().setCustomId(customId).setLabel('Unparticipate').setStyle(ButtonStyle.Danger);
 
     return button;
 };

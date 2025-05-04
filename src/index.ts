@@ -13,8 +13,8 @@ export * as embeds from './assets/embeds';
 import { giveaway as Giveaway } from './typings/giveaway';
 declare module 'discord.js' {
     interface ClientEvents {
-        giveawayStarted: [ giveaway: Giveaway, channel: TextChannel, user: string ];
-        giveawayRerolled: [ giveaway: Giveaway, channel: TextChannel, oldWinners: string[], newWinners: string[] ];
-        giveawayEnded: [ giveaway: Giveaway, channel: TextChannel, winners: string[] ]
+        giveawayStarted: [giveaway: Giveaway, channel: TextChannel, user: string];
+        giveawayRerolled: [giveaway: Giveaway, channel: TextChannel, oldWinners: string[], newWinners: string[]];
+        giveawayEnded: [giveaway: Giveaway, channel: TextChannel, winners: string[]];
     }
 }

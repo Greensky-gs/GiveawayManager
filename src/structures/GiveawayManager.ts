@@ -6,7 +6,14 @@ import { Connection } from 'mysql';
 import { embedsInputData } from '../typings/embeds';
 import { buttonsInputData } from '../typings/buttons';
 import { ManagerEvents, ManagerListeners } from '../typings/managerEvents';
-import { Database, JSONDatabase, MySQLDatabase, SequelizeDatabase, databaseMode, databaseOptions } from '../typings/database';
+import {
+    Database,
+    JSONDatabase,
+    MySQLDatabase,
+    SequelizeDatabase,
+    databaseMode,
+    databaseOptions
+} from '../typings/database';
 import EasyJsonDB from 'easy-json-database';
 import { Sequelize } from 'sequelize';
 import { giveawaySequelizeAttributes, GiveawaysSequelizeModel } from './SequelizeModel';
@@ -38,7 +45,6 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
         this.ended = new Collection();
         this.mode = database.mode;
 
-
         if (this.isJSON()) {
             const opts = database as { path: `./${string}`; mode: 'json' };
             (this.database as JSONDatabase) = {
@@ -53,12 +59,12 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
                 connection: opts.connection
             };
         } else if (this.isSequelize()) {
-            const opts = database as { mode: 'sequelize'; sequelize: Sequelize; tableName: string; }
+            const opts = database as { mode: 'sequelize'; sequelize: Sequelize; tableName: string };
             (this.database as SequelizeDatabase) = {
                 mode: 'sequelize',
                 sequelize: opts.sequelize,
                 tableName: opts.tableName
-            }
+            };
         }
 
         this.embeds = options?.embeds ? Object.assign(this.embeds, options.embeds) : this.embeds;
@@ -131,12 +137,12 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             GiveawaysSequelizeModel.init(giveawaySequelizeAttributes, {
                 sequelize: this.database.sequelize,
                 modelName: this.database.tableName
-            })
+            });
 
-            await GiveawaysSequelizeModel.sync({ alter: true }).catch(err => {
+            await GiveawaysSequelizeModel.sync({ alter: true }).catch((err) => {
                 console.log('Error while syncing the database');
-                throw err
-            })
+                throw err;
+            });
         }
 
         this.fillCache();
@@ -543,7 +549,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
         } else if (this.isJSON()) {
             return this.database.file.get('giveaways') as gwT[];
         } else if (this.isSequelize()) {
-            return (await GiveawaysSequelizeModel.findAll()).map(x => x.dataValues)
+            return (await GiveawaysSequelizeModel.findAll()).map((x) => x.dataValues);
         }
     }
     private query = <R = any>(search: string) => {
@@ -571,7 +577,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
         } else if (this.isMySQL()) {
             this.query(this.makeQuery(data, true));
         } else if (this.isSequelize()) {
-            GiveawaysSequelizeModel.update(data, { where: { message_id } }).catch(console.error)
+            GiveawaysSequelizeModel.update(data, { where: { message_id } }).catch(console.error);
         }
     }
     private insertGiveaway(data: gwT) {
@@ -583,7 +589,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
         } else if (this.isMySQL()) {
             this.query(this.makeQuery(data, false));
         } else if (this.isSequelize()) {
-            GiveawaysSequelizeModel.create(data).catch(console.error)
+            GiveawaysSequelizeModel.create(data).catch(console.error);
         }
     }
     private deleteGwDb(message_id: string) {
@@ -595,7 +601,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
         } else if (this.isMySQL()) {
             this.query(`DELETE FROM giveaways WHERE message_id='${message_id}'`);
         } else if (this.isSequelize()) {
-            GiveawaysSequelizeModel.destroy({ where: { message_id } }).catch(console.error)
+            GiveawaysSequelizeModel.destroy({ where: { message_id } }).catch(console.error);
         }
     }
 }
