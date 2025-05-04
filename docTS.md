@@ -292,7 +292,7 @@ export const winners = (winners: string[], gw: giveaway, url: string) => {
 This is the embed sent in the channel when :
 
 1. The giveaway is over
-2. At least one winner can be determined
+2. No winner can be determined
 3. The [sendMessages option](#sendmessages-option) is enabled
 
 The only parameter is the URL to the giveaway
