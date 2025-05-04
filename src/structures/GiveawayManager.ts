@@ -5,8 +5,11 @@ import * as buttons from '../assets/buttons';
 import { Connection } from 'mysql';
 import { embedsInputData } from '../typings/embeds';
 import { buttonsInputData } from '../typings/buttons';
-import { Database, JSONDatabase, ManagerEvents, ManagerListeners, MySQLDatabase, databaseMode, databaseOptions } from '../typings/managerEvents';
+import { ManagerEvents, ManagerListeners } from '../typings/managerEvents';
+import { Database, JSONDatabase, MySQLDatabase, SequelizeDatabase, databaseMode, databaseOptions } from '../typings/database';
 import EasyJsonDB from 'easy-json-database';
+import { Sequelize } from 'sequelize';
+import { giveawaySequelizeAttributes, GiveawaysSequelizeModel } from './SequelizeModel';
 
 export class GiveawayManager<DatabaseMode extends databaseMode> {
     public readonly client: Client;
@@ -27,36 +30,58 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             embeds?: embedsInputData;
             buttons?: buttonsInputData;
             sendMessages?: boolean;
-        },
+        }
     ) {
         this.client = client;
         this.cache = new Collection();
 
         this.ended = new Collection();
-        if (database.mode === 'json') {
-            const opts = database as { path: `./${string}`, mode: 'json' };
+        this.mode = database.mode;
+
+
+        if (this.isJSON()) {
+            const opts = database as { path: `./${string}`; mode: 'json' };
             (this.database as JSONDatabase) = {
                 file: new EasyJsonDB(opts.path),
                 mode: 'json',
                 path: opts.path
-            }
-        } else if (database.mode === 'mysql') {
-            const opts = database as { mode: 'mysql', connection: Connection };
+            };
+        } else if (this.isMySQL()) {
+            const opts = database as { mode: 'mysql'; connection: Connection };
             (this.database as MySQLDatabase) = {
                 mode: 'mysql',
                 connection: opts.connection
+            };
+        } else if (this.isSequelize()) {
+            const opts = database as { mode: 'sequelize'; sequelize: Sequelize; tableName: string; }
+            (this.database as SequelizeDatabase) = {
+                mode: 'sequelize',
+                sequelize: opts.sequelize,
+                tableName: opts.tableName
             }
         }
-        this.mode = database.mode;
 
         this.embeds = options?.embeds ? Object.assign(this.embeds, options.embeds) : this.embeds;
         this.buttons = options?.buttons ? Object.assign(this.buttons, options.buttons) : this.buttons;
-        this.sendMessages = ![null, undefined].includes(options?.sendMessages) ? options.sendMessages : this.sendMessages;
+        this.sendMessages = ![null, undefined].includes(options?.sendMessages)
+            ? options.sendMessages
+            : this.sendMessages;
 
-        if (this.database.mode === 'json') {
+        if (this.isJSON()) {
             if (!this.database.file.get('giveaways')) this.database.file.set('giveaways', []);
         }
     }
+    // Is
+    public isMySQL(): this is GiveawayManager<'mysql'> {
+        return this.mode === 'mysql';
+    }
+    public isJSON(): this is GiveawayManager<'json'> {
+        return this.mode === 'json';
+    }
+    public isSequelize(): this is GiveawayManager<'sequelize'> {
+        return this.mode === 'sequelize';
+    }
+
     /**
      * @description Get the list of all the giveaways in JSON format.
      * Use `map` to get it as a map, and `collection` to get it as a Discord collection
@@ -99,9 +124,21 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
         await this.query(
             `CREATE TABLE IF NOT EXISTS giveaways ( guild_id TEXT(255) NOT NULL, channel_id TEXT(255) NOT NULL, message_id TEXT(255) NOT NULL, hoster_id TEXT(255) NOT NULL, reward TEXT(255) NOT NULL, winnerCount INTEGER(255) NOT NULL DEFAULT "1", endsAt VARCHAR(1024) NOT NULL, participants LONGTEXT, required_roles LONGTEXT, denied_roles LONGTEXT, bonus_roles LONGTEXT, winners LONGTEXT, ended TINYINT(1) NOT NULL DEFAULT "0" );`
         );
-        if (this.mode === 'json') {
-            if (!(this.database as JSONDatabase).file.get('giveaways')) (this.database as JSONDatabase).file.set('giveaways', []);
+        if (this.isJSON()) {
+            if (!this.database.file.get('giveaways')) this.database.file.set('giveaways', []);
         }
+        if (this.isSequelize()) {
+            GiveawaysSequelizeModel.init(giveawaySequelizeAttributes, {
+                sequelize: this.database.sequelize,
+                modelName: this.database.tableName
+            })
+
+            await GiveawaysSequelizeModel.sync({ alter: true }).catch(err => {
+                console.log('Error while syncing the database');
+                throw err
+            })
+        }
+
         this.fillCache();
         setInterval(() => {
             this.cache
@@ -111,7 +148,6 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
                 });
         }, 15000);
         this.setOnInteraction();
-
     }
     /**
      * @description Create a giveaway in a server with the data that you specified
@@ -152,7 +188,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             this.cache.set(data.message_id, data);
             this.insertGiveaway(data);
 
-            this.client.emit('giveawayStarted', data, input.channel, input.hoster_id)
+            this.client.emit('giveawayStarted', data, input.channel, input.hoster_id);
             resolve(data);
         });
     }
@@ -213,9 +249,10 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
                 gw.winners.length === 0
                     ? this.embeds.noEntries(this.getUrl(gw))
                     : this.embeds.winners(winners, gw, this.getUrl(gw));
-            if (this.sendMessages) await channel.send({ reply: { messageReference: message }, embeds: [em] }).catch((e) => {
-                console.log(e);
-            });
+            if (this.sendMessages)
+                await channel.send({ reply: { messageReference: message }, embeds: [em] }).catch((e) => {
+                    console.log(e);
+                });
             gw.ended = true;
 
             this.cache.delete(gw.message_id);
@@ -262,7 +299,8 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
                 gw.winners.length === 0
                     ? this.embeds.noEntries(this.getUrl(gw))
                     : this.embeds.winners(winners, gw, this.getUrl(gw));
-            if (this.sendMessages) await channel.send({ reply: { messageReference: message }, embeds: [em] }).catch(() => {});
+            if (this.sendMessages)
+                await channel.send({ reply: { messageReference: message }, embeds: [em] }).catch(() => {});
 
             this.updateGiveaway(gw.message_id, gw);
 
@@ -486,7 +524,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
         const gws = await this.getDbGiveaways();
 
         for (const gw of gws) {
-            const g = this.mode === 'json' ? gw : this.toObj(gw);
+            const g = this.isJSON() ? gw : this.toObj(gw);
             if (g.ended === true) this.ended.set(g.message_id, g);
             else this.cache.set(g.message_id, g);
         }
@@ -496,14 +534,16 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             (this.database as MySQLDatabase).connection.query(sql, (error: any, request: R[]) => {
                 if (error) return reject(error);
                 return resolve(request);
-            })
-        })
+            });
+        });
     }
     private async getDbGiveaways(): Promise<gwT[]> {
-        if (this.mode === 'mysql') {
-            return await this.databaseQuery<gwT>(`SELECT * FROM giveaways`)
-        } else {
-            return (this.database as JSONDatabase).file.get('giveaways') as gwT[];
+        if (this.isMySQL()) {
+            return await this.databaseQuery<gwT>(`SELECT * FROM giveaways`);
+        } else if (this.isJSON()) {
+            return this.database.file.get('giveaways') as gwT[];
+        } else if (this.isSequelize()) {
+            return (await GiveawaysSequelizeModel.findAll()).map(x => x.dataValues)
         }
     }
     private query = <R = any>(search: string) => {
@@ -518,36 +558,44 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
     };
     private updateGiveaway(message_id: string, data: gwT) {
         if (data.message_id !== message_id) {
-            throw new Error('Critical: message_id and data.message_id are different. This should never appears, please contact the developper');
+            throw new Error(
+                'Critical: message_id and data.message_id are different. This should never appears, please contact the developper'
+            );
         }
-        if (this.mode === 'json') {
-            const array = (this.database as JSONDatabase).file.get('giveaways') as gwT[];
-            const index = array.indexOf(array.find(x => x.message_id === message_id))
+        if (this.isJSON()) {
+            const array = this.database.file.get('giveaways') as gwT[];
+            const index = array.indexOf(array.find((x) => x.message_id === message_id));
 
             array[index] = data;
-            (this.database as JSONDatabase).file.set('giveaways', array);
-        } else {
+            this.database.file.set('giveaways', array);
+        } else if (this.isMySQL()) {
             this.query(this.makeQuery(data, true));
+        } else if (this.isSequelize()) {
+            GiveawaysSequelizeModel.update(data, { where: { message_id } }).catch(console.error)
         }
     }
     private insertGiveaway(data: gwT) {
-        if (this.mode === 'json') {
-            const array = (this.database as JSONDatabase).file.get('giveaways') as gwT[];
+        if (this.isJSON()) {
+            const array = this.database.file.get('giveaways') as gwT[];
             array.push(data);
 
-            (this.database as JSONDatabase).file.set('giveaways', array);
-        } else {
+            this.database.file.set('giveaways', array);
+        } else if (this.isMySQL()) {
             this.query(this.makeQuery(data, false));
+        } else if (this.isSequelize()) {
+            GiveawaysSequelizeModel.create(data).catch(console.error)
         }
     }
     private deleteGwDb(message_id: string) {
-        if (this.mode === 'json') {
-            const array = (this.database as JSONDatabase).file.get('giveaways') as gwT[];
-            array.splice(array.indexOf(array.find(x => x.message_id === message_id)), 1);
+        if (this.isJSON()) {
+            const array = this.database.file.get('giveaways') as gwT[];
+            array.splice(array.indexOf(array.find((x) => x.message_id === message_id)), 1);
 
             (this.database as JSONDatabase).file.set('giveaways', array);
-        } else {
+        } else if (this.isMySQL()) {
             this.query(`DELETE FROM giveaways WHERE message_id='${message_id}'`);
+        } else if (this.isSequelize()) {
+            GiveawaysSequelizeModel.destroy({ where: { message_id } }).catch(console.error)
         }
     }
 }

@@ -13,7 +13,9 @@
   "dependencies": {
     "discord.js": "^14.19.3",
     "easy-json-database": "^1.5.1",
-    "mysql": "^2.18.1"
+    "mysql": "^2.18.1",
+    "mysql2": "^3.14.1",
+    "sequelize": "^6.37.7"
   },
   "description": "A customisable giveaways manager for Discord.js v14 and mysql",
   "keywords": [
