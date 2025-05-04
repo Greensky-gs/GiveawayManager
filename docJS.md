@@ -82,6 +82,42 @@ client.GiveawaysManager.start();
 
 ```
 
+And here is how to do for Sequelize :
+
+```js
+// Require the necessary discord.js classes
+const { Client, GatewayIntentBits } = require('discord.js');
+const { token } = require('./config.json');
+const { Sequelize } = require('sequelize');
+
+// Require Giveaway Manager
+const GiveawayManager = require('./GiveawaysManager');
+
+// Create a new client instance
+const client = new Client({ intents: [ GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers ] });
+
+const sequelize = new Sequelize('database', 'username', 'password', {
+    host: 'localhost',
+    dialect: 'mysql'
+});
+
+// Create a new GiveawayManager instance
+client.GiveawaysManager = new GiveawayManager(client, {
+    mode: 'sequelize',
+    sequelize: sequelize,
+    tableName: "giveaways"
+}, {
+    embeds: {
+        // Optional embeds customisation
+    },
+    buttons: {
+        // Optional buttons customisation
+    },
+    sendMessages: // Optionnal boolean option that trigger messages send (reroll and end messages)
+});
+client.GiveawaysManager.start();
+
+
 ## Customisable
 
 Embeds and buttons are customisable in [embeds](./assets/embeds.js) and [buttons](./assets/buttons.js)
