@@ -16,7 +16,7 @@
 
 ## About
 
-This is a Discord Giveaway Manager for discord.js v14ㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤ:warning: You need to have a MySQL or JSON database to use the Manager
+This is a Discord Giveaway Manager for discord.js v14ㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤ⚠️ You need to have a MySQL, Sequelize or JSON database to use the Manager
 
 ## Documentation
 
