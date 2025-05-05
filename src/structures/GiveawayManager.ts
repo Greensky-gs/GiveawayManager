@@ -9,6 +9,7 @@ import { ManagerEvents, ManagerListeners } from '../typings/managerEvents';
 import {
     Database,
     JSONDatabase,
+    MongoDBDatabase,
     MySQLDatabase,
     SequelizeDatabase,
     databaseMode,
@@ -17,6 +18,7 @@ import {
 import EasyJsonDB from 'easy-json-database';
 import { Sequelize } from 'sequelize';
 import { giveawaySequelizeAttributes, GiveawaysSequelizeModel } from './SequelizeModel';
+import mongoose from 'mongoose';
 
 export class GiveawayManager<DatabaseMode extends databaseMode> {
     public readonly client: Client;
@@ -65,6 +67,13 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
                 sequelize: opts.sequelize,
                 tableName: opts.tableName
             };
+        } else if (this.isMongoDB()) {
+            const opts = database as { mode: 'mongodb'; connection: mongoose.Connection; modelName: string };
+            (this.database as MongoDBDatabase) = {
+                mode: 'mongodb',
+                modelName: opts.modelName,
+                connection: opts.connection
+            }
         }
 
         this.embeds = options?.embeds ? Object.assign(this.embeds, options.embeds) : this.embeds;
@@ -86,6 +95,9 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
     }
     public isSequelize(): this is GiveawayManager<'sequelize'> {
         return this.mode === 'sequelize';
+    }
+    public isMongoDB(): this is GiveawayManager<'mongodb'> {
+        return this.mode === 'mongodb';
     }
 
     /**
@@ -127,9 +139,11 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
         } as ManagerListeners<keyof ManagerEvents>);
     }
     public async start() {
-        await this.query(
-            `CREATE TABLE IF NOT EXISTS giveaways ( guild_id TEXT(255) NOT NULL, channel_id TEXT(255) NOT NULL, message_id TEXT(255) NOT NULL, hoster_id TEXT(255) NOT NULL, reward TEXT(255) NOT NULL, winnerCount INTEGER(255) NOT NULL DEFAULT "1", endsAt VARCHAR(1024) NOT NULL, participants LONGTEXT, required_roles LONGTEXT, denied_roles LONGTEXT, bonus_roles LONGTEXT, winners LONGTEXT, ended TINYINT(1) NOT NULL DEFAULT "0" );`
-        );
+        if (this.isMySQL()) {
+            await this.query(
+                `CREATE TABLE IF NOT EXISTS giveaways ( guild_id TEXT(255) NOT NULL, channel_id TEXT(255) NOT NULL, message_id TEXT(255) NOT NULL, hoster_id TEXT(255) NOT NULL, reward TEXT(255) NOT NULL, winnerCount INTEGER(255) NOT NULL DEFAULT "1", endsAt VARCHAR(1024) NOT NULL, participants LONGTEXT, required_roles LONGTEXT, denied_roles LONGTEXT, bonus_roles LONGTEXT, winners LONGTEXT, ended TINYINT(1) NOT NULL DEFAULT "0" );`
+            );
+        }
         if (this.isJSON()) {
             if (!this.database.file.get('giveaways')) this.database.file.set('giveaways', []);
         }
@@ -143,6 +157,23 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
                 console.log('Error while syncing the database');
                 throw err;
             });
+        }
+        if (this.isMongoDB()) {
+            this.database.connection.model(this.database.modelName, new mongoose.Schema({
+                guild_id: { type: String, required: true },
+                channel_id: { type: String, required: true },
+                message_id: { type: String, required: true },
+                hoster_id: { type: String, required: true },
+                reward: { type: String, required: true },
+                winnerCount: { type: Number, required: true, default: 1 },
+                endsAt: { type: Date, required: true },
+                participants: { type: Array, default: [] },
+                required_roles: { type: Array, default: [] },
+                denied_roles: { type: Array, default: [] },
+                bonus_roles: { type: Array, default: [] },
+                winners: { type: Array, default: [] },
+                ended: { type: Boolean, default: false }
+            }))
         }
 
         this.fillCache();
@@ -578,6 +609,9 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             this.query(this.makeQuery(data, true));
         } else if (this.isSequelize()) {
             GiveawaysSequelizeModel.update(data, { where: { message_id } }).catch(console.error);
+        } else if (this.isMongoDB()) {
+            const model = this.database.connection.model(this.database.modelName);
+            model.updateMany({ message_id }, data).catch(console.error);
         }
     }
     private insertGiveaway(data: gwT) {
@@ -590,6 +624,9 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             this.query(this.makeQuery(data, false));
         } else if (this.isSequelize()) {
             GiveawaysSequelizeModel.create(data).catch(console.error);
+        } else if (this.isMongoDB()) {
+            const model = this.database.connection.model(this.database.modelName);
+            model.create(data).catch(console.error);
         }
     }
     private deleteGwDb(message_id: string) {
@@ -602,6 +639,9 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             this.query(`DELETE FROM giveaways WHERE message_id='${message_id}'`);
         } else if (this.isSequelize()) {
             GiveawaysSequelizeModel.destroy({ where: { message_id } }).catch(console.error);
+        } else if (this.isMongoDB()) {
+            const model = this.database.connection.model(this.database.modelName);
+            model.deleteMany({ message_id }).catch(console.error);
         }
     }
 }

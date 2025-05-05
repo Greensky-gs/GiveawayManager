@@ -1,8 +1,9 @@
 import EasyJsonDB from 'easy-json-database';
 import { Connection } from 'mysql';
 import { Sequelize } from 'sequelize';
+import mongoose from 'mongoose'
 
-export type databaseMode = 'json' | 'mysql' | 'sequelize';
+export type databaseMode = 'json' | 'mysql' | 'sequelize' | 'mongodb';
 
 // Databases types
 export type MySQLDatabase = {
@@ -19,6 +20,11 @@ export type SequelizeDatabase = {
     sequelize: Sequelize;
     tableName: string;
 };
+export type MongoDBDatabase = {
+    mode: 'mongodb';
+    connection: mongoose.Connection;
+    modelName: string;
+}
 
 // Database options
 export type databaseOptionsSequelize = {
@@ -31,6 +37,11 @@ export type databaseOptionsMySQL = {
 export type databaseOptionsJSON = {
     path: `./${string}`;
 };
+export type databaseOptionsMongoDB = {
+    connection: mongoose.Connection;
+    modelName: string;
+};
+
 
 // Database options type
 export type databaseOptions<Mode extends databaseMode> = {
@@ -41,6 +52,8 @@ export type databaseOptions<Mode extends databaseMode> = {
     ? databaseOptionsMySQL
     : Mode extends 'sequelize'
     ? databaseOptionsSequelize
+    : Mode extends 'mongodb'
+    ? databaseOptionsMongoDB
     : {});
 export type Database<Mode extends databaseMode> = Mode extends 'json'
     ? JSONDatabase
@@ -48,4 +61,6 @@ export type Database<Mode extends databaseMode> = Mode extends 'json'
     ? MySQLDatabase
     : Mode extends 'sequelize'
     ? SequelizeDatabase
+    : Mode extends 'mongodb'
+    ? MongoDBDatabase
     : never;
