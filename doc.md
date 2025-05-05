@@ -16,7 +16,7 @@ Here is the documentation of [Greensky's Giveaways Manager](https://github.com/G
 
 Install the manager using the command `npm install discordjs-giveaways`
 
-Then, you can initiate three different ways, with a [JSON initialisation](#json-initialisation), with [Sequelize](#sequelize-initialisation), or with a [MySQL initialisation](#mysql-initialisation)
+Then, you can initiate four different ways, with a [JSON initialisation](#json-initialisation), with [Sequelize](#sequelize-initialisation), with [MongoDB](#mongodb), or with a [MySQL initialisation](#mysql-initialisation)
 
 ### JSON initialisation
 
@@ -103,6 +103,33 @@ const manager = new GiveawayManager(client, {
     mode: 'sequelize',
     sequelize: sequelize,
     tableName: 'giveaways'
+})
+
+// Start manager
+manager.start();
+```
+
+### MongoDB
+
+If you want to use the manager with a [MongoDB](https://www.npmjs.com/package/mongoose) database, you first need to install [Mongoose](https://www.npmjs.com/package/mongoose) (if it isn't done, use `npm install mongoose`)
+
+```ts
+import { GiveawayManager } from 'discordjs-giveaways';
+import { Client, Partials } from 'discord.js';
+import { connect } from 'mongoose';
+
+// Create client and mongoose connection
+const client = new Client({
+    intents: ['Guilds'],
+    partials: [Partials.Message, Partials.Channel]
+});
+const database = mongoose.connect('mongodb://127.0.0.1/my_database');
+
+// Create manager
+const manager = new GiveawayManager(client, {
+    mode: 'mongodb',
+    connection: database,
+    modelName: 'giveaways'
 })
 
 // Start manager
