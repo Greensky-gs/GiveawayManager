@@ -564,6 +564,62 @@ import { giveawayInput, giveaway } from 'discordjs-giveaways';
 public createGiveaway(input: giveawayInput): Promise<giveaway>
 ```
 
+### isJSON()
+
+This method checks if the manager is in JSON mode. It will automatically set the `mode` field to `json` in the options of the manager for typing.
+
+```ts
+GiveawayManager.isJSON(); // Returns true if the manager is in JSON mode
+```
+
+**Declaration :**
+
+```ts
+public isJSON(): this is GiveawayManager<'json'>
+```
+
+### isMySQL()
+
+This method checks if the manager is in MySQL mode. It will automatically set the `mode` field to `mysql` in the options of the manager for typing.
+
+```ts
+GiveawayManager.isMySQL(); // Returns true if the manager is in MySQL mode
+```
+
+**Declaration :**
+
+```ts
+public isMySQL(): this is GiveawayManager<'mysql'>
+```
+
+### isSequelize()
+
+This method checks if the manager is in Sequelize mode. It will automatically set the `mode` field to `sequelize` in the options of the manager for typing.
+
+```ts
+GiveawayManager.isSequelize(); // Returns true if the manager is in Sequelize mode
+```
+
+**Declaration :**
+
+```ts
+public isSequelize(): this is GiveawayManager<'sequelize'>
+```
+
+### isMongoDB()
+
+This method checks if the manager is in MongoDB mode. It will automatically set the `mode` field to `mongodb` in the options of the manager for typing.
+
+```ts
+GiveawayManager.isMongoDB(); // Returns true if the manager is in MongoDB mode
+```
+
+**Declaration :**
+
+```ts
+public isMongoDB(): this is GiveawayManager<'mongodb'>
+```
+
 ## Types
 
 Some types are used in this manager, here are the explanations one few of them

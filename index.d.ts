@@ -33,6 +33,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
     public isJSON(): this is GiveawayManager<'json'>;
     public isMySQL(): this is GiveawayManager<'mysql'>;
     public isSequelize(): this is GiveawayManager<'sequelize'>;
+    public isMongoDB(): this is GiveawayManager<'mongodb'>;
 
     public get list(): { ended: Giveaway[]; giveaways: Giveaway[] };
     public get map(): { ended: Map<string, Giveaway>; giveaways: Map<string, Giveaway> };
