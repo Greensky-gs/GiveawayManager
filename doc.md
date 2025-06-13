@@ -545,7 +545,8 @@ client.on('messageCreate', (message) => {
         // Optionnal options
         required_roles: [message.member.roles.highest.id],
         denied_roles: [message.guild.members.me.roles.highest.id],
-        bonus_roles: ['1234567895691']
+        bonus_roles: ['1234567895691'],
+        required_servers: [{ id: '141592653589793238', name: 'Pi', invitation: 'https://discord.gg/pi' }]
     })
 })
 ```
@@ -669,6 +670,7 @@ export type giveawayInput = {
     required_roles?: string[]; // The id of required roles
     denied_roles?: string[]; // The id of denied roles
     bonus_roles?: string[]; // The id of bonus roles
+    required_servers?: { id: string; name: string; invitation: string }[]; // The required servers to participate
 };
 ```
 
