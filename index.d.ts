@@ -1,11 +1,11 @@
-import { ButtonInteraction, Client, Collection, Guild } from 'discord.js';
+import { ButtonInteraction, Client, Collection, Guild, User } from 'discord.js';
 import { Connection } from 'mysql';
 import { buttonsInputData } from './dist/typings/buttons';
 import { embedsInputData } from './dist/typings/embeds';
-import { giveaway as Giveaway, giveawayInput } from './dist/typings/giveaway';
+import { giveaway as Giveaway, giveawayInput, requiredServerType } from './dist/typings/giveaway';
 export { embedsInputData } from './dist/typings/embeds';
 export { buttonsInputData } from './dist/typings/buttons';
-export { giveawayInput, giveaway as Giveaway } from './dist/typings/giveaway';
+export { giveawayInput, giveaway as Giveaway, requiredServerType } from './dist/typings/giveaway';
 import { ManagerEvents } from './dist/typings/managerEvents';
 import { databaseMode, databaseOptions, Database } from './dist/typings/database';
 
@@ -48,6 +48,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
         input: string
     ): Promise<string[] | 'not ended' | 'no giveaway' | 'no guild' | 'no channel' | 'no message'>;
     public deleteGiveaway(input: string): Promise<Giveaway | 'no giveaway' | 'no guild' | 'no channel' | 'no message'>;
+    public purgeGiveaways(endedSinceMs: number): Promise<Giveaway[]>;
 
     private roll(giveaway: Giveaway, guild: Guild): Promise<string[]>;
     private registerParticipation(interaction: ButtonInteraction<'cached'>): void;
@@ -59,4 +60,5 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
     private toObj(x: any): Giveaway;
     private fillCache(): Promise<void>;
     private query<R = any>(search: string): Promise<R[]>;
+    private checkServersForUser(user: User, giveaway: Giveaway): Promise<requiredServerType[]>
 }
