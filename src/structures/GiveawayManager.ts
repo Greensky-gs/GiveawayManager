@@ -1,5 +1,5 @@
-import { ButtonBuilder, ButtonInteraction, Client, Collection, Guild, Message, TextChannel } from 'discord.js';
-import { giveaway as gwT, giveawayInput } from '../typings/giveaway';
+import { ButtonBuilder, ButtonInteraction, Client, Collection, Guild, Message, TextChannel, User } from 'discord.js';
+import { giveaway as gwT, giveawayInput, requiredServerType } from '../typings/giveaway';
 import * as embeds from '../assets/embeds';
 import * as buttons from '../assets/buttons';
 import { Connection } from 'mysql';
@@ -16,7 +16,7 @@ import {
     databaseOptions
 } from '../typings/database';
 import EasyJsonDB from 'easy-json-database';
-import { Sequelize } from 'sequelize';
+import { Op, Sequelize } from 'sequelize';
 import { giveawaySequelizeAttributes, GiveawaysSequelizeModel } from './SequelizeModel';
 import mongoose from 'mongoose';
 
@@ -141,7 +141,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
     public async start() {
         if (this.isMySQL()) {
             await this.query(
-                `CREATE TABLE IF NOT EXISTS giveaways ( guild_id TEXT(255) NOT NULL, channel_id TEXT(255) NOT NULL, message_id TEXT(255) NOT NULL, hoster_id TEXT(255) NOT NULL, reward TEXT(255) NOT NULL, winnerCount INTEGER(255) NOT NULL DEFAULT "1", endsAt VARCHAR(1024) NOT NULL, participants LONGTEXT, required_roles LONGTEXT, denied_roles LONGTEXT, bonus_roles LONGTEXT, winners LONGTEXT, ended TINYINT(1) NOT NULL DEFAULT "0" );`
+                `CREATE TABLE IF NOT EXISTS giveaways ( guild_id TEXT(255) NOT NULL, channel_id TEXT(255) NOT NULL, message_id TEXT(255) NOT NULL, hoster_id TEXT(255) NOT NULL, reward TEXT(255) NOT NULL, winnerCount INTEGER(255) NOT NULL DEFAULT "1", endsAt VARCHAR(1024) NOT NULL, participants LONGTEXT, required_roles LONGTEXT, denied_roles LONGTEXT, bonus_roles LONGTEXT, winners LONGTEXT, ended TINYINT(1) NOT NULL DEFAULT "0", required_servers LONGTEXT NOT NULL DEFAULT '[]' );`
             );
         }
         if (this.isJSON()) {
@@ -172,7 +172,8 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
                 denied_roles: { type: Array, default: [] },
                 bonus_roles: { type: Array, default: [] },
                 winners: { type: Array, default: [] },
-                ended: { type: Boolean, default: false }
+                ended: { type: Boolean, default: false },
+                required_servers: { type: Array, default: [] }
             }))
         }
 
@@ -207,6 +208,10 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
                 .catch(() => {});
             if (!msg) return reject('No message');
 
+            if (input.required_servers.length > 0) {
+                if (input.required_servers.some(async(x) => !(this.client.guilds.cache.has(x.id) || await this.client.guilds.fetch(x.id).catch(() => {})))) return reject('Client is not on required servers');
+            }
+
             const data: gwT = {
                 guild_id: input.channel.guild.id,
                 channel_id: input.channel.id,
@@ -216,6 +221,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
                 ended: false,
                 required_roles: input?.required_roles ?? [],
                 denied_roles: input?.denied_roles ?? [],
+                required_servers: input?.required_servers ?? [],
                 participants: [],
                 bonus_roles: input?.bonus_roles ?? [],
                 winners: [],
@@ -228,6 +234,35 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             this.client.emit('giveawayStarted', data, input.channel, input.hoster_id);
             resolve(data);
         });
+    }
+    public async purgeGiveaways(endedSinceMs: number): Promise<gwT[]> {
+        const giveaways = this.cache.filter(x => x.ended && x.endsAt <= Date.now() - endedSinceMs);
+        if (giveaways.size === 0) return [];
+
+        if (this.isMySQL()) {
+            this.query(`DELETE FROM giveaways WHERE ended = 1 AND endsAt <= ${Date.now() - endedSinceMs}`).catch(() => {});
+        }
+        if (this.isJSON()) {
+            const array = this.database.file.get('giveaways') as gwT[];
+            const filtered = array.filter((x) => x.ended && x.endsAt <= Date.now() - endedSinceMs);
+            this.database.file.set('giveaways', array.filter((x) => !filtered.includes(x)));
+        }
+        if (this.isMongoDB()) {
+            const model = this.database.connection.model(this.database.modelName);
+            await model.deleteMany({ ended: true, endsAt: { $lte: new Date(Date.now() - endedSinceMs) } }).catch(() => {});
+        }
+        if (this.isSequelize()) {
+            await GiveawaysSequelizeModel.destroy({
+                where: {
+                    ended: true,
+                    endsAt: {
+                        [Op.lte]: new Date(Date.now() - endedSinceMs)
+                    }
+                }
+            }).catch(() => {});
+        }
+
+        return giveaways.toJSON();
     }
     /**
      * @description Use it to fetch a giveaway. You can use the message ID, the channel ID or the guild ID.
@@ -376,15 +411,16 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             return resolve(gw);
         });
     }
-    private registerParticipation(interaction: ButtonInteraction<'cached'>) {
+    private async registerParticipation(interaction: ButtonInteraction<'cached'>) {
         const gw = this.cache.get(interaction.message.id);
         if (!gw) return interaction.deferUpdate();
 
+        await interaction.deferReply({ flags: ['Ephemeral'], ephemeral: true }).catch(() => {});
+
         if (gw.participants.includes(interaction.user.id))
             return interaction
-                .reply({
-                    embeds: [this.embeds.alreadyParticipate(this.getUrl(gw))],
-                    ephemeral: true
+                .editReply({
+                    embeds: [this.embeds.alreadyParticipate(this.getUrl(gw))]
                 })
                 .catch(() => {});
         const mRoles = interaction.member.roles.cache;
@@ -392,9 +428,8 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             const missing: string[] = gw.required_roles.filter((x) => mRoles.has(x));
             if (missing.length < gw.required_roles.length)
                 return interaction
-                    .reply({
+                    .editReply({
                         embeds: [this.embeds.missingRequiredRoles(missing, this.getUrl(gw))],
-                        ephemeral: true
                     })
                     .catch(() => {});
         }
@@ -405,12 +440,20 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
                 .map((x) => x.id);
             if (missing.length < mRoles.size)
                 return interaction
-                    .reply({
+                    .editReply({
                         embeds: [this.embeds.hasDeniedRoles(missing, this.getUrl(gw))],
-                        ephemeral: true
                     })
                     .catch(() => {});
         }
+
+        if (gw.required_servers.length > 0) {
+            const results = await this.checkServersForUser(interaction.user, gw);
+
+            if (results.length > 0) return interaction.editReply({
+                embeds: [this.embeds.notInServer(this.getUrl(gw), results.map(x => ({ name: x.name, link: x.invitation })))]
+            });
+        }
+
         gw.participants.push(interaction.user.id);
         interaction.message.edit({
             embeds: [
@@ -429,10 +472,30 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             ]
         });
         interaction
-            .reply({ embeds: [this.embeds.participationRegistered(this.getUrl(gw))], ephemeral: true })
+            .editReply({ embeds: [this.embeds.participationRegistered(this.getUrl(gw))] })
             .catch(() => {});
         this.cache.set(gw.message_id, gw);
         this.updateGiveaway(gw.message_id, gw);
+    }
+    /**
+     * Check if the user is indeed in the required servers
+     * 
+     * @param user User to check
+     * @param giveaway 
+     * @returns An array of Guilds where the user is not present
+     */
+    private async checkServersForUser(user: User, giveaway: gwT): Promise<requiredServerType[]> {
+        const missing: requiredServerType[] = []
+            
+        giveaway.required_servers.forEach(async(x) => {
+            const guild = this.client.guilds.cache.get(x.id) ?? await this.client.guilds.fetch(x.id).catch(() => {});
+            if (!guild) return;
+
+            const member = guild.members.cache.get(user.id) ?? await guild.members.fetch(user.id).catch(() => {});
+            if (!member) missing.push(x)
+        })
+
+        return missing;
     }
     private unregisterParticipation(interaction: ButtonInteraction<'cached'>) {
         const gw = this.cache.get(interaction.message.id);
@@ -490,10 +553,39 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
     private getUrl({ guild_id, channel_id, message_id }: { guild_id: string; channel_id: string; message_id: string }) {
         return `https://discord.com/channels/${guild_id}/${channel_id}/${message_id}`;
     }
+    private async filterGiveawayParticipants(gw: gwT) {
+        if (gw.participants.length === 0) return true;
+        if (gw.required_servers.length === 0) return true;
+
+        const guild = this.client.guilds.cache.get(gw.guild_id);
+
+        if (!guild) return true;
+        const before = gw.participants.length;
+
+        gw.participants = gw.participants.filter(async(x) => {
+            const user = this.client.users.cache.get(x) ?? await this.client.users.fetch(x).catch(() => {});
+            if (!user) return false;
+
+            const check = await this.checkServersForUser(user, gw);
+            if (check.length > 0) return false
+
+            return true
+        });
+
+        if (gw.participants.length != before) {
+            this.updateGiveaway(gw.message_id, gw)
+        }
+
+        return true;
+    }
     private async roll(gw: gwT, guild: Guild): Promise<string[]> {
         return new Promise(async (resolve) => {
             if (gw.participants.length === 0) return resolve([]);
             if (!guild) return resolve([]);
+
+            await this.filterGiveawayParticipants(gw);
+            if (gw.participants.length === 0) return resolve([]);
+
             let participants: string[] = [];
 
             for (const id of gw.participants) {

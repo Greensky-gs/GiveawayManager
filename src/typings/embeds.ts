@@ -19,4 +19,5 @@ export type embedsInputData = {
     winners?: (winners: string[], data: giveaway, url: string) => Embed | EmbedBuilder;
     noEntries?: (url: string) => Embed | EmbedBuilder;
     participationRegistered?: (url: string) => Embed | EmbedBuilder;
+    notInServer?: (url: string, servers: { name: string; link: string }[]) => Embed | EmbedBuilder;
 };

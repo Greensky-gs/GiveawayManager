@@ -31,6 +31,15 @@ Ends <t:${((data.time + Date.now()) / 1000).toFixed(0)}:R>`);
             inline: false
         });
     }
+    if (data.required_servers && data.required_servers.length > 0) {
+        embed.addFields({
+            name: 'Required servers',
+            value: data.required_servers
+                .map((s) => `[${s.name}](${s.invitation})`)
+                .join('\n'),
+            inline: false
+        });
+    }
 
     return embed;
 };
@@ -116,3 +125,4 @@ export const participationRegistered = (url: string) => {
         .setDescription(`I registered your participation to [**this giveaway**](${url})`)
         .setColor('#00FF00');
 };
+export const notInServer = (url: string, servers: { name: string; link: string }[]) => new EmbedBuilder().setTitle('🚫 Access denied').setDescription(`The access to [**this giveaway**](${url}) is denied for **you** because you are not in one of these servers :\n${servers.map(x => `[${x.name}](${x.link})`)}`).setColor('#ff0000')

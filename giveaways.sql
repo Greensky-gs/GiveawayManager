@@ -10,6 +10,7 @@ CREATE TABLE giveaways (
     required_roles LONGTEXT NOT NULL DEFAULT '[]',
     denied_roles LONGTEXT NOT NULL DEFAULT '[]',
     bonus_roles LONGTEXT NOT NULL DEFAULT '[]',
+    required_servers LONGTEXT NOT NULL DEFAULT '[]',
     winners LONGTEXT NOT NULL DEFAULT '[]',
     ended TINYINT(1) NOT NULL DEFAULT "0"
 );

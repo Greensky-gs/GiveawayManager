@@ -1,5 +1,7 @@
 import { TextChannel } from 'discord.js';
 
+export type requiredServerType = { id: string; name: string; invitation: string; };
+
 export type giveaway = {
     guild_id: string;
     channel_id: string;
@@ -14,6 +16,7 @@ export type giveaway = {
     bonus_roles: string[];
     winners: string[];
     ended: boolean;
+    required_servers: requiredServerType[];
 };
 export type gwSql = giveaway & {
     denied_roles: string;
@@ -21,6 +24,7 @@ export type gwSql = giveaway & {
     winners: string;
     participants: string;
     required_roles: string;
+    required_servers: string;
 };
 
 export type giveawayInput = {
@@ -33,4 +37,5 @@ export type giveawayInput = {
     required_roles?: string[];
     denied_roles?: string[];
     bonus_roles?: string[];
+    required_servers?: requiredServerType[];
 };
