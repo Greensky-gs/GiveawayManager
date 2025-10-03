@@ -15,7 +15,7 @@ export class GiveawaysSequelizeModel extends Model {
     public required_roles!: string[];
     public denied_roles!: string[];
     public bonus_roles!: string[];
-    public required_servers!: { name: string; id: string; invitation: string; }[]
+    public required_servers!: { name: string; id: string; invitation: string }[];
 
     public participants!: string[];
     public winners!: string[];
@@ -74,7 +74,7 @@ export const giveawaySequelizeAttributes = {
     required_servers: {
         type: DataTypes.JSON,
         allowNull: false,
-        defaultValue: [] as { name: string; id: string; invitation: string; }[]
+        defaultValue: [] as { name: string; id: string; invitation: string }[]
     },
     winners: {
         type: DataTypes.JSON,
