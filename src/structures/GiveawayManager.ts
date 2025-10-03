@@ -1,4 +1,4 @@
-import { ButtonBuilder, ButtonInteraction, Client, Collection, Guild, Message, TextChannel, User } from 'discord.js';
+import { ButtonBuilder, ButtonInteraction, Client, Collection, Guild, Message, TextChannel, User, MessageFlags } from 'discord.js';
 import { giveaway as gwT, giveawayInput, requiredServerType } from '../typings/giveaway';
 import * as embeds from '../assets/embeds';
 import * as buttons from '../assets/buttons';
@@ -73,7 +73,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
                 mode: 'mongodb',
                 modelName: opts.modelName,
                 connection: opts.connection
-            }
+            };
         }
 
         this.embeds = options?.embeds ? Object.assign(this.embeds, options.embeds) : this.embeds;
@@ -86,16 +86,19 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             if (!this.database.file.get('giveaways')) this.database.file.set('giveaways', []);
         }
     }
-    // Is
+
     public isMySQL(): this is GiveawayManager<'mysql'> {
         return this.mode === 'mysql';
     }
+
     public isJSON(): this is GiveawayManager<'json'> {
         return this.mode === 'json';
     }
+
     public isSequelize(): this is GiveawayManager<'sequelize'> {
         return this.mode === 'sequelize';
     }
+
     public isMongoDB(): this is GiveawayManager<'mongodb'> {
         return this.mode === 'mongodb';
     }
@@ -110,6 +113,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             giveaways: this.cache.toJSON()
         };
     }
+
     /**
      * @description Get the list of all the giveaways in a map
      * Use `list` to get it as a JSON array, or `collection` to get it as a Discord collection
@@ -122,6 +126,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
         this.cache.forEach((x) => giveaways.set(x.message_id, x));
         return { ended, giveaways };
     }
+
     /**
      * @description Get the list of all the giveaways in a Discord collection
      * Use `list` to get it as a JSON array, or `map` to get it as a map
@@ -132,12 +137,14 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             giveaways: this.cache
         };
     }
+
     public on<K extends keyof ManagerEvents>(event: K, run: (...args: ManagerEvents[K]) => void | unknown) {
         this.listeners.push({
             event,
             run
         } as ManagerListeners<keyof ManagerEvents>);
     }
+
     public async start() {
         if (this.isMySQL()) {
             await this.query(
@@ -159,25 +166,28 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             });
         }
         if (this.isMongoDB()) {
-            this.database.connection.model(this.database.modelName, new mongoose.Schema({
-                guild_id: { type: String, required: true },
-                channel_id: { type: String, required: true },
-                message_id: { type: String, required: true },
-                hoster_id: { type: String, required: true },
-                reward: { type: String, required: true },
-                winnerCount: { type: Number, required: true, default: 1 },
-                endsAt: { type: Date, required: true },
-                participants: { type: Array, default: [] },
-                required_roles: { type: Array, default: [] },
-                denied_roles: { type: Array, default: [] },
-                bonus_roles: { type: Array, default: [] },
-                winners: { type: Array, default: [] },
-                ended: { type: Boolean, default: false },
-                required_servers: { type: Array, default: [] }
-            }))
+            this.database.connection.model(
+                this.database.modelName,
+                new mongoose.Schema({
+                    guild_id: { type: String, required: true },
+                    channel_id: { type: String, required: true },
+                    message_id: { type: String, required: true },
+                    hoster_id: { type: String, required: true },
+                    reward: { type: String, required: true },
+                    winnerCount: { type: Number, required: true, default: 1 },
+                    endsAt: { type: Date, required: true },
+                    participants: { type: Array, default: [] },
+                    required_roles: { type: Array, default: [] },
+                    denied_roles: { type: Array, default: [] },
+                    bonus_roles: { type: Array, default: [] },
+                    winners: { type: Array, default: [] },
+                    ended: { type: Boolean, default: false },
+                    required_servers: { type: Array, default: [] }
+                })
+            );
         }
 
-        this.fillCache();
+        await this.fillCache();
         setInterval(() => {
             this.cache
                 .filter((x) => x.endsAt <= Date.now() && !x.ended)
@@ -187,6 +197,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
         }, 15000);
         this.setOnInteraction();
     }
+
     /**
      * @description Create a giveaway in a server with the data that you specified
      * @param input Giveaway datas
@@ -209,7 +220,16 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             if (!msg) return reject('No message');
 
             if (input.required_servers.length > 0) {
-                if (input.required_servers.some(async(x) => !(this.client.guilds.cache.has(x.id) || await this.client.guilds.fetch(x.id).catch(() => {})))) return reject('Client is not on required servers');
+                if (
+                    input.required_servers.some(
+                        async (x) =>
+                            !(
+                                this.client.guilds.cache.has(x.id) ||
+                                (await this.client.guilds.fetch(x.id).catch(() => {}))
+                            )
+                    )
+                )
+                    return reject('Client is not on required servers');
             }
 
             const data: gwT = {
@@ -235,21 +255,32 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             resolve(data);
         });
     }
+
     public async purgeGiveaways(endedSinceMs: number): Promise<gwT[]> {
-        const giveaways = this.cache.filter(x => x.ended && x.endsAt <= Date.now() - endedSinceMs);
+        const giveaways = this.cache.filter((x) => x.ended && x.endsAt <= Date.now() - endedSinceMs);
         if (giveaways.size === 0) return [];
 
         if (this.isMySQL()) {
-            this.query(`DELETE FROM giveaways WHERE ended = 1 AND endsAt <= ${Date.now() - endedSinceMs}`).catch(() => {});
+            this.query(
+                `DELETE
+                        FROM giveaways
+                        WHERE ended = 1
+                          AND endsAt <= ${Date.now() - endedSinceMs}`
+            ).catch(() => {});
         }
         if (this.isJSON()) {
             const array = this.database.file.get('giveaways') as gwT[];
             const filtered = array.filter((x) => x.ended && x.endsAt <= Date.now() - endedSinceMs);
-            this.database.file.set('giveaways', array.filter((x) => !filtered.includes(x)));
+            this.database.file.set(
+                'giveaways',
+                array.filter((x) => !filtered.includes(x))
+            );
         }
         if (this.isMongoDB()) {
             const model = this.database.connection.model(this.database.modelName);
-            await model.deleteMany({ ended: true, endsAt: { $lte: new Date(Date.now() - endedSinceMs) } }).catch(() => {});
+            await model
+                .deleteMany({ ended: true, endsAt: { $lte: new Date(Date.now() - endedSinceMs) } })
+                .catch(() => {});
         }
         if (this.isSequelize()) {
             await GiveawaysSequelizeModel.destroy({
@@ -264,6 +295,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
 
         return giveaways.toJSON();
     }
+
     /**
      * @description Use it to fetch a giveaway. You can use the message ID, the channel ID or the guild ID.
      * In the case of the channel ID, it will return the last launched giveaway in the channel.
@@ -288,6 +320,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
         }
         return undefined;
     }
+
     /**
      * @description End a giveaway and return an array with the winners
      * @param input ID of the message of the giveaway you want to end
@@ -335,6 +368,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             return resolve(winners);
         });
     }
+
     /**
      * @description Reroll a giveaway by it's ID and return an array with the new winners
      * @param input ID of the message of the giveaway you want to reroll
@@ -382,6 +416,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             return resolve(winners);
         });
     }
+
     /**
      * @description Delete a giveaway. You can delete a finished or a current giveaway.
      * Suppress the message, erase it from the database and returns the values of the giveaway
@@ -411,11 +446,12 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             return resolve(gw);
         });
     }
+
     private async registerParticipation(interaction: ButtonInteraction<'cached'>) {
         const gw = this.cache.get(interaction.message.id);
         if (!gw) return interaction.deferUpdate();
 
-        await interaction.deferReply({ flags: ['Ephemeral'], ephemeral: true }).catch(() => {});
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral }).catch(() => {});
 
         if (gw.participants.includes(interaction.user.id))
             return interaction
@@ -429,7 +465,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             if (missing.length < gw.required_roles.length)
                 return interaction
                     .editReply({
-                        embeds: [this.embeds.missingRequiredRoles(missing, this.getUrl(gw))],
+                        embeds: [this.embeds.missingRequiredRoles(missing, this.getUrl(gw))]
                     })
                     .catch(() => {});
         }
@@ -441,7 +477,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             if (missing.length < mRoles.size)
                 return interaction
                     .editReply({
-                        embeds: [this.embeds.hasDeniedRoles(missing, this.getUrl(gw))],
+                        embeds: [this.embeds.hasDeniedRoles(missing, this.getUrl(gw))]
                     })
                     .catch(() => {});
         }
@@ -449,13 +485,22 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
         if (gw.required_servers.length > 0) {
             const results = await this.checkServersForUser(interaction.user, gw);
 
-            if (results.length > 0) return interaction.editReply({
-                embeds: [this.embeds.notInServer(this.getUrl(gw), results.map(x => ({ name: x.name, link: x.invitation })))]
-            });
+            if (results.length > 0)
+                return interaction.editReply({
+                    embeds: [
+                        this.embeds.notInServer(
+                            this.getUrl(gw),
+                            results.map((x) => ({
+                                name: x.name,
+                                link: x.invitation
+                            }))
+                        )
+                    ]
+                });
         }
 
         gw.participants.push(interaction.user.id);
-        interaction.message.edit({
+        await interaction.message.edit({
             embeds: [
                 this.embeds.giveaway({
                     bonus_roles: gw.bonus_roles,
@@ -472,42 +517,46 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             ]
         });
         interaction
-            .editReply({ embeds: [this.embeds.participationRegistered(this.getUrl(gw))] })
+            .editReply({
+                embeds: [this.embeds.participationRegistered(this.getUrl(gw))]
+            })
             .catch(() => {});
         this.cache.set(gw.message_id, gw);
         this.updateGiveaway(gw.message_id, gw);
     }
+
     /**
      * Check if the user is indeed in the required servers
-     * 
+     *
      * @param user User to check
-     * @param giveaway 
+     * @param giveaway
      * @returns An array of Guilds where the user is not present
      */
     private async checkServersForUser(user: User, giveaway: gwT): Promise<requiredServerType[]> {
-        const missing: requiredServerType[] = []
-            
-        giveaway.required_servers.forEach(async(x) => {
-            const guild = this.client.guilds.cache.get(x.id) ?? await this.client.guilds.fetch(x.id).catch(() => {});
-            if (!guild) return;
+        const missing: requiredServerType[] = [];
 
-            const member = guild.members.cache.get(user.id) ?? await guild.members.fetch(user.id).catch(() => {});
-            if (!member) missing.push(x)
-        })
+        for (const x of giveaway.required_servers) {
+            const guild = this.client.guilds.cache.get(x.id) ?? (await this.client.guilds.fetch(x.id).catch(() => {}));
+            if (!guild) continue;
+
+            const member = guild.members.cache.get(user.id) ?? (await guild.members.fetch(user.id).catch(() => {}));
+            if (!member) missing.push(x);
+        }
 
         return missing;
     }
-    private unregisterParticipation(interaction: ButtonInteraction<'cached'>) {
+
+    private async unregisterParticipation(interaction: ButtonInteraction<'cached'>) {
         const gw = this.cache.get(interaction.message.id);
         if (!gw) return interaction.deferUpdate();
 
         if (!gw.participants.includes(interaction.user.id))
-            return interaction
-                .reply({
+            try {
+                return await interaction.reply({
                     embeds: [this.embeds.notParticipated(this.getUrl(gw))],
-                    ephemeral: true
-                })
-                .catch(() => {});
+                    flags: MessageFlags.Ephemeral
+                });
+            } catch {}
 
         gw.participants = gw.participants.filter((x) => x !== interaction.user.id);
         this.cache.set(gw.message_id, gw);
@@ -516,7 +565,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
         interaction
             .reply({
                 embeds: [this.embeds.removeParticipation(this.getUrl(gw))],
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             })
             .catch(() => {});
         interaction.message
@@ -538,6 +587,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             })
             .catch(() => {});
     }
+
     private setOnInteraction() {
         this.client.on('interactionCreate', (interaction) => {
             if (interaction.isButton() && interaction.guild) {
@@ -550,9 +600,11 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             }
         });
     }
+
     private getUrl({ guild_id, channel_id, message_id }: { guild_id: string; channel_id: string; message_id: string }) {
         return `https://discord.com/channels/${guild_id}/${channel_id}/${message_id}`;
     }
+
     private async filterGiveawayParticipants(gw: gwT) {
         if (gw.participants.length === 0) return true;
         if (gw.required_servers.length === 0) return true;
@@ -562,22 +614,21 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
         if (!guild) return true;
         const before = gw.participants.length;
 
-        gw.participants = gw.participants.filter(async(x) => {
-            const user = this.client.users.cache.get(x) ?? await this.client.users.fetch(x).catch(() => {});
+        gw.participants = gw.participants.filter(async (x) => {
+            const user = this.client.users.cache.get(x) ?? (await this.client.users.fetch(x).catch(() => {}));
             if (!user) return false;
 
             const check = await this.checkServersForUser(user, gw);
-            if (check.length > 0) return false
-
-            return true
+            return check.length <= 0;
         });
 
         if (gw.participants.length != before) {
-            this.updateGiveaway(gw.message_id, gw)
+            this.updateGiveaway(gw.message_id, gw);
         }
 
         return true;
     }
+
     private async roll(gw: gwT, guild: Guild): Promise<string[]> {
         return new Promise(async (resolve) => {
             if (gw.participants.length === 0) return resolve([]);
@@ -624,22 +675,28 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             return resolve(winners);
         });
     }
+
     private makeQuery(data: any, exists?: boolean) {
         if (exists === true)
-            return `UPDATE giveaways SET ${Object.keys(data)
-                .map((k) => `${k}="${this.getValue(data[k])}"`)
-                .join(', ')} WHERE message_id='${data.message_id}'`;
+            return `UPDATE giveaways
+                    SET ${Object.keys(data)
+                        .map((k) => `${k}="${this.getValue(data[k])}"`)
+                        .join(', ')}
+                    WHERE message_id = '${data.message_id}'`;
         return `INSERT INTO giveaways (${Object.keys(data)
             .map((k) => k)
-            .join(', ')}) VALUES (${Object.keys(data)
-            .map((k) => `"${this.getValue(data[k])}"`)
-            .join(', ')})`;
+            .join(', ')})
+                VALUES (${Object.keys(data)
+                    .map((k) => `"${this.getValue(data[k])}"`)
+                    .join(', ')})`;
     }
+
     private getValue(x: string | string[] | boolean): string {
         if (typeof x === 'boolean') return x ? '1' : '0';
         if (typeof x === 'string') return x.replace(/"/g, '\\"');
         return JSON.stringify(x).replace(/"/g, '\\"');
     }
+
     private toObj(x: any) {
         let gw: any = x;
         ['participants', 'required_roles', 'winners', 'denied_roles', 'bonus_roles'].forEach((v) => {
@@ -649,6 +706,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
 
         return gw;
     }
+
     private async fillCache() {
         const gws = await this.getDbGiveaways();
 
@@ -658,6 +716,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             else this.cache.set(g.message_id, g);
         }
     }
+
     private databaseQuery<R = any>(sql: string): Promise<R[]> {
         return new Promise((resolve, reject) => {
             (this.database as MySQLDatabase).connection.query(sql, (error: any, request: R[]) => {
@@ -666,6 +725,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             });
         });
     }
+
     private async getDbGiveaways(): Promise<gwT[]> {
         if (this.isMySQL()) {
             return await this.databaseQuery<gwT>(`SELECT * FROM giveaways`);
@@ -675,6 +735,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             return (await GiveawaysSequelizeModel.findAll()).map((x) => x.dataValues);
         }
     }
+
     private query = <R = any>(search: string) => {
         if (this.mode === 'mysql') {
             return new Promise<R[]>((resolve, reject) => {
@@ -685,6 +746,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             });
         }
     };
+
     private updateGiveaway(message_id: string, data: gwT) {
         if (data.message_id !== message_id) {
             throw new Error(
@@ -706,6 +768,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             model.updateMany({ message_id }, data).catch(console.error);
         }
     }
+
     private insertGiveaway(data: gwT) {
         if (this.isJSON()) {
             const array = this.database.file.get('giveaways') as gwT[];
@@ -721,6 +784,7 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
             model.create(data).catch(console.error);
         }
     }
+
     private deleteGwDb(message_id: string) {
         if (this.isJSON()) {
             const array = this.database.file.get('giveaways') as gwT[];
@@ -728,7 +792,9 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
 
             (this.database as JSONDatabase).file.set('giveaways', array);
         } else if (this.isMySQL()) {
-            this.query(`DELETE FROM giveaways WHERE message_id='${message_id}'`);
+            this.query(`DELETE
+                        FROM giveaways
+                        WHERE message_id = '${message_id}'`);
         } else if (this.isSequelize()) {
             GiveawaysSequelizeModel.destroy({ where: { message_id } }).catch(console.error);
         } else if (this.isMongoDB()) {
