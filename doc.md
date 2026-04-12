@@ -6,7 +6,7 @@ Here is the documentation of [Greensky's Giveaways Manager](https://github.com/G
 
 | Content | Section |
 | ------- | ------- |
-| Initialisation | [initialisation part](#initialisation) ([MySQL](#mysql-initialisation) & [JSON](#json-initialisation)) |
+| Initialisation | [initialisation part](#initialisation) ([MySQL](#mysql-initialisation), [JSON](#json-initialisation)), [Sequelize](#sequelize-initialisation), [MongoDB](#mongodb) |
 | Customisation | [Customisation](#customisation) ([embeds](#customise-embeds), [buttons](#customise-buttons) & [sendMessages](#sendmessages-option)) |
 | Methods | [list of methods](#methods) |
 | Types | [List of types](#types) |
