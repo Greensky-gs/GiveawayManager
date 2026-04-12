@@ -1,6 +1,6 @@
 {
     "name": "discordjs-giveaways",
-    "version": "1.5.3",
+    "version": "1.5.4",
     "main": "dist/index.js",
     "files": [
         "./dist",
@@ -14,12 +14,12 @@
     ],
     "license": "MIT",
     "dependencies": {
-        "discord.js": "^14.22.1",
+        "discord.js": "^14.26.2",
         "easy-json-database": "^1.5.1",
-        "mongoose": "^8.14.1",
+        "mongoose": "^9.4.1",
         "mysql": "^2.18.1",
-        "mysql2": "^3.15.1",
-        "sequelize": "^6.37.7"
+        "mysql2": "^3.22.0",
+        "sequelize": "^6.37.8"
     },
     "description": "A customisable giveaways manager for Discord.js v14 and mysql",
     "keywords": [
@@ -35,6 +35,11 @@
     "engines": {
         "node": ">=16.17.1"
     },
+	"scripts": {
+		"prettier": "prettier -w src index.d.ts",
+		"build": "tsc -b",
+		"post": "yarn build && npm publish"
+	},
     "directories": {
         "lib": "src"
     },
@@ -48,7 +53,7 @@
     },
     "devDependencies": {
         "@types/mysql": "^2.15.27",
-        "prettier": "^2.7.1",
+        "prettier": "^3.8.2",
         "tsc": "^2.0.4",
         "typescript": "*"
     }
