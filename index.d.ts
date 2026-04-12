@@ -60,5 +60,5 @@ export class GiveawayManager<DatabaseMode extends databaseMode> {
     private toObj(x: any): Giveaway;
     private fillCache(): Promise<void>;
     private query<R = any>(search: string): Promise<R[]>;
-    private checkServersForUser(user: User, giveaway: Giveaway): Promise<requiredServerType[]>
+    private checkServersForUser(user: User, giveaway: Giveaway): Promise<requiredServerType[]>;
 }

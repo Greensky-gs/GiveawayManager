@@ -1,6 +1,6 @@
 import { TextChannel } from 'discord.js';
 
-export type requiredServerType = { id: string; name: string; invitation: string; };
+export type requiredServerType = { id: string; name: string; invitation: string };
 
 export type giveaway = {
     guild_id: string;

@@ -1,4 +1,14 @@
-import { ButtonBuilder, ButtonInteraction, Client, Collection, Guild, Message, TextChannel, User, MessageFlags } from 'discord.js';
+import {
+    ButtonBuilder,
+    ButtonInteraction,
+    Client,
+    Collection,
+    Guild,
+    Message,
+    TextChannel,
+    User,
+    MessageFlags
+} from 'discord.js';
 import { giveaway as gwT, giveawayInput, requiredServerType } from '../typings/giveaway';
 import * as embeds from '../assets/embeds';
 import * as buttons from '../assets/buttons';
